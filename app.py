@@ -26,6 +26,7 @@ from linebot.v3.messaging import (
     QuickReplyItem,
     MessageAction,
     ReplyMessageRequest,
+    PushMessageRequest,
     TextMessage,
 )
 from linebot.v3.webhooks import MessageEvent, TextMessageContent
@@ -142,6 +143,21 @@ def reply(reply_token: str, text: str, quick_replies: list | None = None):
         ))
 
 
+def push(user_id: str, text: str, quick_replies: list | None = None):
+    msg = TextMessage(text=text)
+    if quick_replies:
+        msg.quick_reply = QuickReply(items=[
+            QuickReplyItem(action=MessageAction(label=label, text=text_))
+            for label, text_ in quick_replies
+        ])
+    with ApiClient(configuration) as client:
+        api = MessagingApi(client)
+        api.push_message(PushMessageRequest(
+            to=user_id,
+            messages=[msg],
+        ))
+
+
 # ─────────────────────────────────────────
 # メッセージ処理
 # ─────────────────────────────────────────
@@ -204,9 +220,9 @@ def handle_message(user_id: str, text: str, reply_token: str):
             msg = "入荷してました！\n\n"
             for r in restocked:
                 msg += f"✅ [{r['site']}] {r['color']} {r['size']}\n¥{r['price']:,}\n{r['url']}\n\n"
-            reply(reply_token, msg.strip())
+            push(user_id, msg.strip())
         else:
-            reply(reply_token, "まだ在庫は復活していません。引き続き監視中です🔍")
+            push(user_id, "まだ在庫は復活していません。引き続き監視中です🔍")
         return
 
     # ─── ヘルプ ───
@@ -222,8 +238,10 @@ def handle_message(user_id: str, text: str, reply_token: str):
               "「カラー サイズ」の形式で送ってください\n例）ジェット SS20\n例）クリスタル SS16 2パック\n\n「使い方」と送るとヘルプが見られます")
         return
 
-    reply(reply_token, f"検索中です…⏳\n{color} {color} {size} × {packs}パック")
+    # 「検索中」を即返信（reply tokenはここで使い切る）
+    reply(reply_token, f"検索中です…⏳\n{color} {size} × {packs}パック\n少々お待ちください")
 
+    # 検索実行（時間がかかるのでpushで結果を送る）
     results = rs.fetch_all(color, size)
     result_text = format_results(results, packs)
 
@@ -239,11 +257,11 @@ def handle_message(user_id: str, text: str, reply_token: str):
     if no_stock:
         full_text += f"\n\n❌ 在庫なし商品が{len(no_stock)}件あります。\n再入荷通知を希望しますか？"
         user_sessions[user_id] = {"state": "awaiting_restock", "pending": no_stock}
-        reply(reply_token, full_text,
-              quick_replies=[("希望する", "はい"), ("希望しない", "いいえ")])
+        push(user_id, full_text,
+             quick_replies=[("希望する", "はい"), ("希望しない", "いいえ")])
     else:
         user_sessions[user_id] = {"state": "idle", "pending": []}
-        reply(reply_token, full_text)
+        push(user_id, full_text)
 
 
 # ─────────────────────────────────────────
