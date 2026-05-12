@@ -97,6 +97,14 @@
 
     .empty-hint { text-align: center; color: #bbb; font-size: 14px; padding: 8px 0; }
     .error-msg { color: #e74c3c; font-size: 14px; }
+
+    /* 楽天・Yahoo!検索ボタン */
+    .search-links { display: flex; gap: 8px; margin-top: 10px; }
+    .search-link { flex: 1; padding: 9px 6px; text-align: center; text-decoration: none; border-radius: 10px; font-size: 13px; font-weight: 700; -webkit-tap-highlight-color: transparent; }
+    .search-link.rakuten { background: #bf0000; color: #fff; }
+    .search-link.rakuten:active { background: #990000; }
+    .search-link.yahoo { background: #ff0033; color: #fff; }
+    .search-link.yahoo:active { background: #cc0022; }
   </style>
 </head>
 <body>
@@ -317,6 +325,13 @@
           .filter(r => !['tsukuro','deco_dahlia'].includes(r.site_id) && r.note !== 'このサイズは取り扱いなし')
           .map(r => r.site).join('、');
         if (otherNoStock) html += `<div style="font-size:12px;color:#bbb;margin-top:4px">在庫なし: ${otherNoStock}</div>`;
+
+        // 楽天・Yahoo! 横断検索ボタン
+        const q = encodeURIComponent(`プレシオサ マキシマ ${colorGroup.color} ${d.size} グロス`);
+        html += `<div class="search-links">
+          <a href="https://search.rakuten.co.jp/search/mall/${q}/" class="search-link rakuten" target="_blank">楽天で検索 🔍</a>
+          <a href="https://shopping.yahoo.co.jp/search?p=${q}" class="search-link yahoo" target="_blank">Yahoo!で検索 🔍</a>
+        </div>`;
       });
       html += `</div>`;
     });
