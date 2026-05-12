@@ -252,7 +252,7 @@ def handle_message(user_id: str, text: str, reply_token: str):
     else:
         full_text = result_text + "\n\n在庫のある商品が見つかりませんでした。"
 
-    no_stock = [r for r in results if not r["in_stock"]]
+    no_stock = [r for r in results if not r["in_stock"] and "取り扱いなし" not in r.get("note", "")]
 
     if no_stock:
         full_text += f"\n\n❌ 在庫なし商品が{len(no_stock)}件あります。\n再入荷通知を希望しますか？"
