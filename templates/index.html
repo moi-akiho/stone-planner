@@ -105,6 +105,8 @@
     .search-link.rakuten:active { background: #990000; }
     .search-link.yahoo { background: #ff0033; color: #fff; }
     .search-link.yahoo:active { background: #cc0022; }
+    .search-link.amazon { background: #ff9900; color: #111; }
+    .search-link.amazon:active { background: #e68800; }
   </style>
 </head>
 <body>
@@ -326,11 +328,12 @@
           .map(r => r.site).join('、');
         if (otherNoStock) html += `<div style="font-size:12px;color:#bbb;margin-top:4px">在庫なし: ${otherNoStock}</div>`;
 
-        // 楽天・Yahoo! 横断検索ボタン
-        const q = encodeURIComponent(`プレシオサ マキシマ ${colorGroup.color} ${d.size} グロス`);
+        // 楽天・Yahoo!・Amazon 横断検索ボタン
+        const q = encodeURIComponent(`プレシオサ マキシマ ラインストーン ${colorGroup.color} ${d.size} グロス`);
         html += `<div class="search-links">
-          <a href="https://search.rakuten.co.jp/search/mall/${q}/" class="search-link rakuten" target="_blank">楽天で検索 🔍</a>
-          <a href="https://shopping.yahoo.co.jp/search?p=${q}" class="search-link yahoo" target="_blank">Yahoo!で検索 🔍</a>
+          <a href="https://search.rakuten.co.jp/search/mall/${q}/" class="search-link rakuten" target="_blank">楽天 🔍</a>
+          <a href="https://shopping.yahoo.co.jp/search?p=${q}" class="search-link yahoo" target="_blank">Yahoo! 🔍</a>
+          <a href="https://www.amazon.co.jp/s?k=${q}" class="search-link amazon" target="_blank">Amazon 🔍</a>
         </div>`;
       });
       html += `</div>`;
