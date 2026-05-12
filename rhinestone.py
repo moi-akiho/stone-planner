@@ -107,166 +107,149 @@ HEADERS = {
     )
 }
 
-# デコダリア (san-ai-flowers.jp) の色名→ハンドル マッピング
-# URL: /products/prs-{handle}
+# デコダリア (san-ai-flowers.jp) の色名→商品ハンドル マッピング
+# URL: /products/{handle}  ※ハンドルはサイトから実際に確認した値
 DECO_DAHLIA_COLOR_MAP = {
-    # ── クリスタル系（無色・コーティング）────────────────
-    "クリスタル":                   "crystal",
-    "クリスタルオーロラ":           "crystal-ab",
-    "クリスタルAB":                 "crystal-ab",        # 表記ゆれ
-    "クリスタルナイトフォール":     "crystal-nightfall",
-    "クリスタルオーラム":           "crystal-aurum",
-    "クリスタルハニー":             "crystal-honey",
-    "クリスタルゴールデンハニー":   "crystal-golden-honey",
-    "クリスタルラブラドール":       "crystal-labrador",
-    "クリスタルヘリオトローブ":     "crystal-heliotrope",
-    "クリスタルサンライズ":         "crystal-sunrise",
-    "クリスタルアプリコット":       "crystal-apricot",
-    "クリスタルネオンバイオレット": "crystal-neon-violet",
-    "クリスタルネオンピンク":       "crystal-neon-pink",
-    "クリスタルネオンイエロー":     "crystal-neon-yellow",
-    "クリスタルアージェントフレア": "crystal-argent-flare",
-    "クリスタルブロンドフレア":     "crystal-blonde-flare",
-    "クリスタルベルベット":         "crystal-velvet",
+    # ── クリスタル系 ─────────────────────────────────
+    "クリスタル":                     "prs-cry",
+    "クリスタルオーロラ":             "prs-cryab",
+    "クリスタルAB":                   "prs-cryab",
+    "クリスタルオーラム":             "prs-cryaur",
+    "クリスタルナイトフォール":       "prs-cryntf",
+    "クリスタルハニー":               "prs-cryhon",
+    "クリスタルゴールデンハニー":     "prs-crygdh",
+    "クリスタルラブラドール":         "prs-crylab",
+    "クリスタルヘリオトローブ":       "prs-cryhel",
+    "クリスタルサンライズ":           "prs-crysnr",
+    "クリスタルアプリコット":         "prs-cryapri",
+    "クリスタルアージェントフレア":   "prs-cryagf",
+    "クリスタルブロンドフレア":       "prs-crybdf",
+    "クリスタルブルーフレア":         "prs-cryblf",
+    "クリスタルレッドフレーム":       "prs-cryrdf",
+    "クリスタルベルベット":           "prs-cryvel",
+    "クリスタルヴィーナス":           "prs-cryven",
+    "クリスタルヴィトレイルミディアム": "prs-cryvm",
+    "クリスタルボルカノ":             "prs-cryvol",
+    "クリスタルモンテカルロ":         "prs-crymtc",
+    "クリスタルラグーン":             "prs-crylag",
+    "クリスタルラバ":                 "prs-crylav",
+    "クリスタルビアリッツ":           "prs-crybiar",
+    "クリスタルカプリゴールド":       "prs-crycag",
+    "クリスタルスターライトゴールド": "prs-crystg",
+    "クリスタルアンティークピンク":   "prs-cryatpk",
+    "クリスタルピーコックグリーン":   "prs-crypeg",
     # ── ホワイト・オパール系 ──────────────────────────
-    "ホワイトオパール":             "white-opal",
-    "ローズオパール":               "rose-opal",
-    "ライトサファイアオパール":     "light-sapphire-opal",
+    "ホワイトオパール":               "prs-whopal",
+    "ローズオパール":                 "prs-roseop",
+    "ライトサファイアオパール":       "prs-ltsapphop",
+    "アメジストオパール":             "prs-ameop",
+    "クリソライトオパール":           "prs-chropa",
     # ── イエロー・ゴールド系 ──────────────────────────
-    "ジョンキル":                   "jonquil",
-    "ジョンキルオーロラ":           "jonquil-ab",
-    "シトリン":                     "citrine",
-    "シトリンオーロラ":             "citrine-ab",
-    "ライトトパーズ":               "light-topaz",
-    "トパーズ":                     "topaz",
-    "サン":                         "sun",
-    "サンオーロラ":                 "sun-ab",
-    "ゴールドクオーツ":             "gold-quartz",
-    "ゴールドクオーツオーロラ":     "gold-quartz-ab",
-    "ライトゴールドクオーツ":       "light-gold-quartz",
-    "ライトゴールドクオーツオーロラ": "light-gold-quartz-ab",
-    "メスメラ":                     "mesmera",
+    "ジョンキル":                     "prs-jonquil",
+    "ジョンキルオーロラ":             "preciosa-fb-maxima-jonquilab",
+    "シトリン":                       "prs-citrine",
+    "ライトトパーズ":                 "prs-lttopaz",
+    "ライトトパーズオーロラ":         "preciosa-fb-maxima-lttopazab",
+    "トパーズ":                       "prs-topaz",
+    "トパーズオーロラ":               "preciosa-fb-maxima-topazab",
+    "サン":                           "prs-sun",
+    "サンオーロラ":                   "preciosa-fb-maxima-sunab",
+    "ゴールドクオーツ":               "prs-gquar",
+    "ライトゴールドクオーツ":         "prs-lgquar",
+    "メスメラ":                       "prs-mesmera",
+    "アシッドイエロー":               "presiosa-fb-maxima-acidyellowab",
     # ── オレンジ・ピーチ系 ───────────────────────────
-    "ヒヤシンス":                   "hyacinth",
-    "ヒヤシンスオーロラ":           "hyacinth-ab",
-    "ライトピーチ":                 "light-peach",
-    "パパラチア":                   "padparadscha",
-    "ライムシクル":                 "lime-cycle",
-    "ライムシクルオーロラ":         "lime-cycle-ab",
+    "ヒヤシンス":                     "prs-hyacinth",
+    "ヒヤシンスオーロラ":             "preciosa-fb-maxima-hyacinthab",
+    "ライトピーチ":                   "prs-ltpeach",
+    "パパラチア":                     "prs-padpa",
+    "ライムシクル":                   "prs-limec",
+    "ローズピーチ":                   "prs-roseop",  # ローズオパールと別商品の可能性あり
     # ── ピンク・レッド系 ──────────────────────────────
-    "ヴィンテージローズ":           "vintage-rose",
-    "ライトローズ":                 "light-rose",
-    "ライトローズオーロラ":         "light-rose-ab",
-    "ローズ":                       "rose",
-    "ローズオーロラ":               "rose-ab",
-    "インディアンピンク":           "indian-pink",
-    "ルビー":                       "ruby",
-    "レッドベルベット":             "red-velvet",
-    "パープルベルベット":           "purple-velvet",
-    "シャム":                       "siam",
-    "ライトシャム":                 "light-siam",
-    "ライトシャムオーロラ":         "light-siam-ab",
+    "ヴィンテージローズ":             "prs-vinrose",
+    "ライトローズ":                   "prs-ltrose",
+    "ローズ":                         "prs-rose",
+    "ローズオーロラ":                 "preciosa-fb-maxima-roseab",
+    "インディアンピンク":             "prs-indpink",
+    "インディアンピンクオーロラ":     "preciosa-fb-maxima-indianpinkab",
+    "ルビー":                         "prs-ruby",
+    "ルビーオーロラ":                 "preciosa-fb-maxima-rubyab",
+    "レッドベルベット":               "prs-redvel",
+    "レッドベルベットオーロラ":       "preciosa-fb-maxima-redvelvetab",
+    "パープルベルベット":             "prs-purpvel",
+    "パープルベルベットオーロラ":     "preciosa-fb-maxima-perplevelvetab",
+    "シャム":                         "prs-siam",
+    "シャムオーロラ":                 "preciosa-fb-maxima-siamab",
+    "ライトシャム":                   "prs-ltsiam",
+    "だすてぃローズ":                 "prs-dustyrose",
+    "だすてぃローズオーロラ":         "prs-dustyroseab",
+    "ヴィヴィッドシャム":             "prs-vividsiam",
+    "ヴィヴィッドシャムオーロラ":     "prs-vividsiamab",
+    "ローズピーチオーロラ":           "presiosa-fb-maxima-rosepeachab",
+    "フューシャ":                     "prs-fuchia",
     # ── パープル系 ────────────────────────────────────
-    "ライトアメジスト":             "light-amethyst",
-    "ライトアメジストオーロラ":     "light-amethyst-ab",
-    "ペールライラック":             "pale-lilac",
-    "ペールライラックオーロラ":     "pale-lilac-ab",
-    "アメジスト":                   "amethyst",
-    "タンザナイト":                 "tanzanite",
-    "ブルーバイオレット":           "blue-violet",
+    "ライトアメジスト":               "prs-lame",
+    "ペールライラック":               "prs-pllilac",
+    "アメジスト":                     "prs-ame",
+    "アメジストオーロラ":             "preciosa-fb-maxima-amethystab",
+    "アメジストオパールオーロラ":     "presiosa-fb-maxima-amethystopab",
+    "ライラックアッシュ":             "prs-lilacash",
+    "ライラックアッシュオーロラ":     "prs-lilacashab",
+    "タンザナイト":                   "prs-tanzan",
     # ── ブルー系 ──────────────────────────────────────
-    "アクアボヘミア":               "aqua-bohemica",
-    "アクアボヘミカ":               "aqua-bohemica",     # 表記ゆれ
-    "アクアボヘミアオーロラ":       "aqua-bohemica-ab",
-    "アクアマリン":                 "aquamarine",
-    "アクアマリンオーロラ":         "aquamarine-ab",
-    "ライトサファイア":             "light-sapphire",
-    "ライトサファイアオーロラ":     "light-sapphire-ab",
-    "サファイア":                   "sapphire",
-    "サファイアオーロラ":           "sapphire-ab",
-    "カプリブルー":                 "capri-blue",
-    "カリビアンシー":               "caribbean-sea",
-    "カリビアンシーオーロラ":       "caribbean-sea-ab",
-    "ブルージルコン":               "blue-zircon",
-    "モンタナ":                     "montana",
-    "コバルトブルー":               "cobalt-blue",
-    "デニムブルー":                 "denim-blue",
-    "ダークインディゴ":             "dark-indigo",
+    "アクアボヘミア":                 "prs-aquabo",
+    "アクアボヘミカ":                 "prs-aquabo",        # 表記ゆれ
+    "アクアマリン":                   "prs-aqua",
+    "ライトサファイア":               "prs-ltsapph",
+    "サファイア":                     "prs-sapph",
+    "カプリブルー":                   "prs-capblue",
+    "カリビアンシー":                 "prs-caribsea",
+    "ブルージルコン":                 "prs-bluezir",
+    "モンタナ":                       "prs-montana",
+    "モンタナオーロラ":               "preciosa-fb-maxima-montanaab",
+    "コバルトブルー":                 "prs-capblue",  # 要確認
+    "デニムブルー":                   "prs-denim",
+    "デニムブルーオーロラ":           "preciosa-fb-maxima-denimblueoab",
+    "ダークインディゴ":               "prs-dkindg",
+    "ダークインディゴオーロラ":       "preciosa-fb-maxima-darkindigoab",
+    "マリブブルー":                   "prs-malibublue",
+    "マリブブルーオーロラ":           "prs-malibublueab",
+    "ディープシー":                   "prs-deepsea",
+    "ディープシーオーロラ":           "preciosa-fb-maxima-deepseaab",
+    "シルバーアクアマリン":           "prs-slvaquamarine",
+    "シルバーアクアマリンオーロラ":   "prs-slvaquamarineab",
     # ── グリーン系 ────────────────────────────────────
-    "エメラルド":                   "emerald",
-    "オリバイン":                   "olivine",
-    "ペリドット":                   "peridot",
-    "ペリドットオーロラ":           "peridot-ab",
-    "シャムロック":                 "shamrock",
-    "ミントグリーン":               "mint-green",
-    "ライトコロラドトパーズ":       "light-colorado-topaz",
+    "エメラルド":                     "prs-eme",
+    "オリバイン":                     "prs-olivin",
+    "オリバインオーロラ":             "preciosa-fb-maxima-olivineab",
+    "ペリドット":                     "prs-peridot",
+    "ペリドットオーロラ":             "preciosa-fb-maxima-peridotab",
+    "シャムロック":                   "prs-shamrock",
+    "シャムロックオーロラ":           "preciosa-fb-maxima-shamrockab",
+    "ミントグリーン":                 "prs-mintgreen",
+    "ミントグリーンオーロラ":         "prs-mintgreenab",
+    "ライトコロラドトパーズ":         "prs-lctopaz",
+    "ライトコロラドトパーズオーロラ": "preciosa-fb-maxima-ltcoltopazab",
+    "エリナイト":                     "prs-erinite",
+    "エリナイトオーロラ":             "preciosa-fb-maxima-eriniteab",
     # ── ブラック・グレー系 ───────────────────────────
-    "ジェット":                     "jet",
-    "ジェットオーロラ":             "jet-ab",
-    "ジェットブラウンフレア":       "jet-brown-flare",
-    "ジェットシルバーフレア":       "jet-silver-flare",
-    "ジェットオデッセイ":           "jet-odyssey",
-    "スモークトパーズ":             "smoke-topaz",
-    "ライトスモークトパーズ":       "light-smoke-topaz",
-    "スモークサファイア":           "smoke-sapphire",
-    "スモークアメジスト":           "smoke-amethyst",
-    "ライトグラファイト":           "light-graphite",
-    "ヘマタイト":                   "hematite",
-    "ジェットヘマタイト":           "jet-hematite",
-    "ブラックダイヤモンド":         "black-diamond",
-    "ブラックダイヤモンドオーロラ": "black-diamond-ab",
-    "ブラックダイア":               "black-diamond",     # 表記ゆれ
-    # ── 追加クリスタル系 ──────────────────────────────
-    "クリスタルラバ":               "crystal-lava",
-    "クリスタルカプリゴールド":     "crystal-capri-gold",
-    "クリスタルスターライトゴールド": "crystal-starlight-gold",
-    "クリスタルレッドフレーム":     "crystal-red-frame",
-    "クリスタルブルーフレア":       "crystal-blue-flare",
-    "クリスタルモンテカルロ":       "crystal-monte-carlo",
-    "クリスタルボルカノ":           "crystal-volcano",
-    "クリスタルヴィトレイルミディアム": "crystal-vitrail-medium",
-    "クリスタルラグーン":           "crystal-lagoon",
-    "クリスタルビアリッツ":         "crystal-biarritz",
-    "クリスタルヴィーナス":         "crystal-venus",
-    "クリスタルアンティークピンク": "crystal-antique-pink",
-    "クリスタルネオンオレンジ":     "crystal-neon-orange",
-    "クリスタルネオングリーン":     "crystal-neon-green",
-    "クリスタルネオンブルー":       "crystal-neon-blue",
-    "クリスタルピーコックグリーン": "crystal-peacock-green",
-    # ── オパール・オーロラ追加 ────────────────────────
-    "ホワイトオパールオーロラ":     "white-opal-ab",
-    "ローズオパールオーロラ":       "rose-opal-ab",
-    "ライトサファイアオパールオーロラ": "light-sapphire-opal-ab",
-    "アメジストオパール":           "amethyst-opal",
-    "クリソライトオパール":         "chrysolite-opal",
-    "クリソライトオパールオーロラ": "chrysolite-opal-ab",
-    # ── ピンク・レッド追加 ───────────────────────────
-    "ローズピーチ":                 "rose-peach",
-    "ライトピーチオーロラ":         "light-peach-ab",
-    "インディアンピンクオーロラ":   "indian-pink-ab",
-    "ヴィンテージローズオーロラ":   "vintage-rose-ab",
-    "レッドベルベットオーロラ":     "red-velvet-ab",
-    "だすてぃローズ":               "dusty-rose",
-    "ヴィヴィッドシャム":           "vivid-siam",
-    # ── イエロー・オレンジ追加 ───────────────────────
-    "ライトトパーズオーロラ":       "light-topaz-ab",
-    "トパーズオーロラ":             "topaz-ab",
-    "アシッドイエロー":             "acid-yellow",
-    "パパラチアオーロラ":           "padparadscha-ab",
-    # ── パープル追加 ─────────────────────────────────
-    "ライラックアッシュ":           "lilac-ash",
-    "タンザナイトオーロラ":         "tanzanite-ab",
-    # ── ブルー追加 ────────────────────────────────────
-    "メスメラオーロラ":             "mesmera-ab",
-    "マリブブルー":                 "malibu-blue",
-    "ディープシー":                 "deep-sea",
-    "ディープシーオーロラ":         "deep-sea-ab",
-    "ブルージルコンオーロラ":       "blue-zircon-ab",
-    "シルバーアクアマリン":         "silver-aquamarine",
-    # ── グリーン追加 ─────────────────────────────────
-    "エメラルドオーロラ":           "emerald-ab",
-    "エリナイト":                   "erinite",
-    "フィッシャーオーロラ":         "fisher-ab",
+    "ジェット":                       "prs-jet",
+    "ジェットオーロラ":               "preciosa-fb-maxima-jetab",
+    "ジェットブラウンフレア":         "prs-jetbrf",
+    "ジェットシルバーフレア":         "prs-jetsif",
+    "ジェットヘマタイト":             "prs-jethem",
+    "スモークトパーズ":               "prs-smtopaz",
+    "スモークトパーズオーロラ":       "preciosa-fb-maxima-smokedtopaz",
+    "ライトスモークトパーズ":         "prs-lsmtopaz",
+    "ライトスモークトパーズオーロラ": "preciosa-fb-maxima-ltsmokedtopazab",
+    "スモークサファイア":             "prs-smsapph",
+    "スモークサファイアオーロラ":     "preciosa-fb-maxima-smokedsapphireab",
+    "スモークアメジスト":             "prs-smame",
+    "スモークアメジストオーロラ":     "preciosa-fb-maxima-smokedamethystab",
+    "ライトグラファイト":             "prs-dkindg",  # 要確認
+    "ライトグラファイトオーロラ":     "presiosa-fb-maxima-lightgraphiteab",
+    "ブラックダイヤモンド":           "prs-bkdia",
+    "ブラックダイア":                 "prs-bkdia",         # 表記ゆれ
 }
 
 # crystal-pro.com の色名→URLコード マッピング（追加可）
@@ -543,9 +526,9 @@ def scrape_tsukuro(color: str, size: str) -> dict:
 
 def scrape_deco_dahlia(color: str, size: str) -> dict:
     """
-    Shopify JSON API: /products/prs-{handle}.json でバリアント一覧取得
-    SKUパターン: prs-{handle}-{size}q?-q1pc
-    在庫: HTML + Schema.org JSON-LD
+    Shopify .js API: /products/{handle}.js でバリアント一覧＋在庫取得
+    .json API と異なり available フィールドが含まれる
+    SKUパターン例: prs-lttopaz-ss20ql-q1pc
     """
     base_url = "https://www.san-ai-flowers.jp"
     result = {
@@ -561,12 +544,12 @@ def scrape_deco_dahlia(color: str, size: str) -> dict:
         result["note"] = f"色コード未登録（{color}）"
         return result
 
-    product_url = f"{base_url}/products/prs-{handle}"
+    product_url = f"{base_url}/products/{handle}"
     result["url"] = product_url
 
-    # Shopify JSON API で全バリアントを取得
+    # Shopify .js API — available フィールドあり
     try:
-        r = requests.get(f"{product_url}.json", headers=HEADERS, timeout=15)
+        r = requests.get(f"{product_url}.js", headers=HEADERS, timeout=15)
         if r.status_code == 404:
             result["note"] = "取り扱いなし"
             return result
@@ -578,7 +561,7 @@ def scrape_deco_dahlia(color: str, size: str) -> dict:
 
     size_lower = size.lower()  # "ss20"
     target_variant = None
-    for v in data.get("product", {}).get("variants", []):
+    for v in data.get("variants", []):       # .js は variants がトップレベル
         sku = v.get("sku", "").lower()
         if f"-{size_lower}" in sku and "q1pc" in sku:
             target_variant = v
@@ -589,11 +572,11 @@ def scrape_deco_dahlia(color: str, size: str) -> dict:
         return result
 
     try:
-        result["price"] = int(float(target_variant.get("price", 0)))
+        result["price"] = int(target_variant.get("price", 0)) // 100  # .js は銭単位
     except (ValueError, TypeError):
         pass
 
-    # 在庫確認: Shopify JSON の available フィールドを直接使用（最も確実）
+    # 在庫確認: .js の available フィールドを使用
     result["in_stock"] = bool(target_variant.get("available", False))
 
     if not result["in_stock"]:
