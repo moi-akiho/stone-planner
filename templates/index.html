@@ -67,6 +67,9 @@
     .site-name { font-size: 13px; color: #888; margin-bottom: 2px; }
     .site-total { font-size: 22px; font-weight: 800; color: #222; line-height: 1.2; }
     .site-breakdown { font-size: 13px; color: #888; margin-bottom: 8px; }
+    .price-base { text-decoration: line-through; color: #bbb; }
+    .price-disc { color: #27ae60; font-weight: 700; }
+    .coupon-date { color: #27ae60; font-size: 11px; margin-left: 2px; }
     .shipping-free { color: #27ae60; font-weight: 600; font-size: 13px; margin-bottom: 8px; }
     .shipping-cost { font-size: 13px; color: #e08000; margin-bottom: 8px; line-height: 1.5; }
     .buy-btn { display: block; width: 100%; padding: 11px; background: #6b4fa0; color: #fff; text-align: center; text-decoration: none; border-radius: 10px; font-size: 15px; font-weight: 700; -webkit-tap-highlight-color: transparent; }
@@ -269,7 +272,12 @@
             if (badges) html += `<div class="badge-row">${badges}</div>`;
             html += `<div class="site-name">${r.site}</div>`;
             html += `<div class="site-total">¥${fmt(r.total)}</div>`;
-            html += `<div class="site-breakdown">¥${fmt(r.price)} × ${d.packs}パック`;
+            // つくろ！ドットコム：基本価格 → 割引価格を並べて表示
+            if (r.site_id === 'tsukuro' && r.price_base && r.price_discounted && r.price_base !== r.price_discounted) {
+              html += `<div class="site-breakdown"><span class="price-base">¥${fmt(r.price_base)}</span> → <span class="price-disc">¥${fmt(r.price_discounted)}</span><span class="coupon-date">（5・15・25日）</span> × ${d.packs}パック`;
+            } else {
+              html += `<div class="site-breakdown">¥${fmt(r.price)} × ${d.packs}パック`;
+            }
             if (r.shipping > 0) html += ` + 送料¥${fmt(r.shipping)}`;
             html += `</div>`;
             if (r.shipping === 0) {
@@ -282,9 +290,9 @@
           });
         }
 
-        // つくろ！ドットコムが在庫なしの場合、通知登録ボタンを表示
+        // つくろ！ドットコム・デコダリアが在庫なしの場合、通知登録ボタンを表示
         d.unavailable
-          .filter(r => r.site_id === 'tsukuro' && r.note !== 'このサイズは取り扱いなし')
+          .filter(r => ['tsukuro','deco_dahlia'].includes(r.site_id) && r.note !== 'このサイズは取り扱いなし')
           .forEach(r => {
             const key = `${r.site_id}|${colorGroup.color}|${d.size}`;
             const alreadyRegistered = watchlistData.some(
@@ -301,7 +309,7 @@
           });
 
         const otherNoStock = d.unavailable
-          .filter(r => r.site_id !== 'tsukuro' && r.note !== 'このサイズは取り扱いなし')
+          .filter(r => !['tsukuro','deco_dahlia'].includes(r.site_id) && r.note !== 'このサイズは取り扱いなし')
           .map(r => r.site).join('、');
         if (otherNoStock) html += `<div style="font-size:12px;color:#bbb;margin-top:4px">在庫なし: ${otherNoStock}</div>`;
       });

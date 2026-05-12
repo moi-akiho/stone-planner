@@ -2,9 +2,9 @@
 rhinestone.py — プレシオサ Rose MAXIMA フラットバック 最安購入プランナー
 
 サイト別スクレイピング方式（実際のHTML構造に基づく）:
-  ① OFFICE-K    www.onocoltd.jp    /product-list/3531 → 商品ページ
-  ② つくろう     www.tsukuro.com    POST検索 + shopdetail + 価格API
-  ③ クリスタルプロ www.crystal-pro.com /SHOP/PFB-{Color}-GRS.html
+  ① OFFICE-K        www.onocoltd.jp       /product-list/3531 → 商品ページ
+  ② つくろ！ドットコム www.tsukuro.com       POST検索 + shopdetail + 価格API
+  ③ デコダリア        www.san-ai-flowers.jp  Shopify JSON API
 """
 
 import csv
@@ -27,9 +27,9 @@ from bs4 import BeautifulSoup
 WATCHLIST_FILE = Path(__file__).parent / "watchlist.json"
 
 SHIPPING = {
-    "onocoltd":    {"free_threshold": 1000,  "cost": 550},
-    "tsukuro":     {"free_threshold": 4000,  "cost": 400},
-    "crystal_pro": {"free_threshold": 10000, "cost": 370},
+    "onocoltd":     {"free_threshold": 1000, "cost": 550},
+    "tsukuro":      {"free_threshold": 4000, "cost": 400},
+    "deco_dahlia":  {"free_threshold": 1980, "cost": 120},  # ネコポス
 }
 
 GROSS_PACK = {"SS12": 1440, "SS16": 1440, "SS20": 1440, "SS30": 288}
@@ -42,6 +42,25 @@ HEADERS = {
         "AppleWebKit/537.36 (KHTML, like Gecko) "
         "Chrome/124.0.0.0 Safari/537.36"
     )
+}
+
+# デコダリア (san-ai-flowers.jp) の色名→ハンドル マッピング
+# URL: /products/prs-{handle}
+DECO_DAHLIA_COLOR_MAP = {
+    "ジェット":             "jet",
+    "クリスタル":           "crystal",
+    "クリスタルオーロラ":   "crystal-ab",
+    "ローズ":               "rose",
+    "ライトローズ":         "light-rose",
+    "アメジスト":           "amethyst",
+    "ブラックダイヤモンド": "black-diamond",
+    "ライトコロラドトパーズ": "light-colorado-topaz",
+    "スモークトパーズ":     "smoke-topaz",
+    "エメラルド":           "emerald",
+    "ライトサファイア":     "light-sapphire",
+    "ヘマタイト":           "hematite",
+    "ジェットヘマタイト":   "jet-hematite",
+    "ライトアメジスト":     "light-amethyst",
 }
 
 # crystal-pro.com の色名→URLコード マッピング（追加可）
@@ -302,10 +321,10 @@ def scrape_tsukuro(color: str, size: str) -> dict:
             price_data = pr.json()
             price_raw = int(re.sub(r"[^\d]", "", str(price_data.get("price", "0"))))
             if price_raw > 0:
-                result["price"] = price_raw
-                if coupon_active():
-                    result["price"] = apply_coupon(price_raw)
-                    result["coupon_applied"] = True
+                result["price_base"] = price_raw
+                result["price_discounted"] = apply_coupon(price_raw)
+                result["coupon_applied"] = coupon_active()
+                result["price"] = result["price_discounted"] if result["coupon_applied"] else price_raw
         except Exception as e:
             pass  # 価格取得失敗でも在庫情報は返す
 
@@ -313,7 +332,93 @@ def scrape_tsukuro(color: str, size: str) -> dict:
 
 
 # ─────────────────────────────────────────
-# ③ クリスタルプロ スクレイパー
+# ③ デコダリア スクレイパー
+# ─────────────────────────────────────────
+
+def scrape_deco_dahlia(color: str, size: str) -> dict:
+    """
+    Shopify JSON API: /products/prs-{handle}.json でバリアント一覧取得
+    SKUパターン: prs-{handle}-{size}q?-q1pc
+    在庫: HTML + Schema.org JSON-LD
+    """
+    base_url = "https://www.san-ai-flowers.jp"
+    result = {
+        "site": "デコダリア", "site_id": "deco_dahlia",
+        "color": color, "size": size,
+        "price": None, "in_stock": False,
+        "url": base_url,
+        "note": "",
+    }
+
+    handle = DECO_DAHLIA_COLOR_MAP.get(color)
+    if not handle:
+        result["note"] = f"色コード未登録（{color}）"
+        return result
+
+    product_url = f"{base_url}/products/prs-{handle}"
+    result["url"] = product_url
+
+    # Shopify JSON API で全バリアントを取得
+    try:
+        r = requests.get(f"{product_url}.json", headers=HEADERS, timeout=15)
+        if r.status_code == 404:
+            result["note"] = "取り扱いなし"
+            return result
+        r.raise_for_status()
+        data = r.json()
+    except Exception:
+        result["note"] = "取得失敗"
+        return result
+
+    size_lower = size.lower()  # "ss20"
+    target_variant = None
+    for v in data.get("product", {}).get("variants", []):
+        sku = v.get("sku", "").lower()
+        if f"-{size_lower}" in sku and "q1pc" in sku:
+            target_variant = v
+            break
+
+    if not target_variant:
+        result["note"] = "このサイズは取り扱いなし"
+        return result
+
+    try:
+        result["price"] = int(float(target_variant.get("price", 0)))
+    except (ValueError, TypeError):
+        pass
+
+    # 在庫確認: バリアントページの Schema.org JSON-LD
+    variant_id = target_variant["id"]
+    soup = fetch_html(f"{product_url}?variant={variant_id}")
+    if soup:
+        for script in soup.find_all("script", {"type": "application/ld+json"}):
+            try:
+                ld = json.loads(script.string or "")
+                offers = ld.get("offers", [])
+                if isinstance(offers, dict):
+                    offers = [offers]
+                for offer in offers:
+                    avail = offer.get("availability", "")
+                    if "InStock" in avail or "PreOrder" in avail:
+                        result["in_stock"] = True
+                    elif "OutOfStock" in avail:
+                        result["in_stock"] = False
+                    # SKUが一致するものがあれば優先
+                    if offer.get("sku", "").lower() == target_variant.get("sku", "").lower():
+                        result["in_stock"] = "InStock" in avail
+                        break
+                break
+            except Exception:
+                continue
+
+    if not result["in_stock"]:
+        result["note"] = "在庫なし"
+
+    return result
+
+
+# ─────────────────────────────────────────
+# （旧クリスタルプロ スクレイパー — 参照用に残す）
 # ─────────────────────────────────────────
 
 def scrape_crystal_pro(color: str, size: str) -> dict:
@@ -403,9 +508,9 @@ def scrape_crystal_pro(color: str, size: str) -> dict:
 # ─────────────────────────────────────────
 
 def fetch_all(color: str, size: str) -> list[dict]:
-    scrapers = [scrape_onocoltd, scrape_tsukuro]
+    scrapers = [scrape_onocoltd, scrape_tsukuro, scrape_deco_dahlia]
     results = []
-    with ThreadPoolExecutor(max_workers=3) as ex:
+    with ThreadPoolExecutor(max_workers=4) as ex:
         futures = {ex.submit(fn, color, size): fn.__name__ for fn in scrapers}
         for f in as_completed(futures):
             try:

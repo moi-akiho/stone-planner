@@ -127,8 +127,14 @@ def check_watchlist():
     if not wl:
         return jsonify([])
 
+    _SCRAPERS = {
+        "onocoltd": rs.scrape_onocoltd,
+        "tsukuro": rs.scrape_tsukuro,
+        "deco_dahlia": rs.scrape_deco_dahlia,
+    }
+
     def check_one(w):
-        fn = {"onocoltd": rs.scrape_onocoltd, "tsukuro": rs.scrape_tsukuro}.get(w["site_id"])
+        fn = _SCRAPERS.get(w["site_id"])
         if not fn:
             return None
         r = fn(w["color"], w["size"])
@@ -153,8 +159,14 @@ def notify():
     if not wl:
         return jsonify({"ok": True, "restocked": []})
 
+    _SCRAPERS = {
+        "onocoltd": rs.scrape_onocoltd,
+        "tsukuro": rs.scrape_tsukuro,
+        "deco_dahlia": rs.scrape_deco_dahlia,
+    }
+
     def check_one(w):
-        fn = {"onocoltd": rs.scrape_onocoltd, "tsukuro": rs.scrape_tsukuro}.get(w["site_id"])
+        fn = _SCRAPERS.get(w["site_id"])
         if not fn:
             return None
         r = fn(w["color"], w["size"])
