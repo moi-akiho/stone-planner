@@ -1,6 +1,6 @@
 """
 rhinestone Web アプリ
-Flask + スマホ向けUI（複数色対応）
+Flask + スマホ向けUI（色ごとに独立したサイズ・数量設定）
 """
 
 import os
@@ -23,11 +23,19 @@ def index():
 
 @app.route("/search", methods=["POST"])
 def search():
+    """
+    受け取るJSON:
+    {
+      "requests": [
+        {"color": "ジェット", "items": [{"size": "SS20", "packs": 2}]},
+        {"color": "ローズ",   "items": [{"size": "SS16", "packs": 1}]}
+      ]
+    }
+    """
     data = request.get_json() or {}
-    colors = [c.strip() for c in data.get("colors", []) if c.strip()]
-    items = data.get("items", [])  # [{"size": "SS20", "packs": 1}, ...]
+    requests_list = data.get("requests", [])
 
-    if not colors or not items:
+    if not requests_list:
         return jsonify({"error": "色とサイズを入力してください"}), 400
 
     def fetch_one(color, item):
@@ -61,25 +69,33 @@ def search():
             "unavailable": unavailable,
         }
 
-    # 全色×全サイズを並列で取得
-    tasks = [(color, item) for color in colors for item in items]
+    # 全タスクを並列実行
+    tasks = [
+        (req["color"], item)
+        for req in requests_list
+        for item in req.get("items", [])
+    ]
+    if not tasks:
+        return jsonify({"error": "サイズを選んでください"}), 400
+
+    size_order = {s: i for i, s in enumerate(SIZES)}
+    color_order = {req["color"]: i for i, req in enumerate(requests_list)}
+
     results = []
     with ThreadPoolExecutor(max_workers=min(len(tasks), 8)) as ex:
         futures = {ex.submit(fetch_one, color, item): (color, item) for color, item in tasks}
         for f in as_completed(futures):
             results.append(f.result())
 
-    # 色順 → サイズ順に並べ直し
-    size_order = {s: i for i, s in enumerate(SIZES)}
-    color_order = {c: i for i, c in enumerate(colors)}
     results.sort(key=lambda x: (color_order.get(x["color"], 99), size_order.get(x["size"], 99)))
 
-    # 色ごとにグループ化
+    # 色ごとにグループ化して返す
     grouped = {}
     for r in results:
         grouped.setdefault(r["color"], []).append(r)
 
-    return jsonify([{"color": c, "sizes": grouped[c]} for c in colors if c in grouped])
+    colors_in_order = [req["color"] for req in requests_list]
+    return jsonify([{"color": c, "sizes": grouped[c]} for c in colors_in_order if c in grouped])
 
 
 @app.route("/health")

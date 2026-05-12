@@ -141,14 +141,14 @@ def scrape_onocoltd(color: str, size: str) -> dict:
     if not soup:
         return result
 
-    # 価格レンジをJavaScriptから取得
+    # JavaScriptから priceArray を取得（variation_id → 価格）
+    price_array = {}
     for script in soup.find_all("script"):
         txt = script.string or ""
-        min_m = re.search(r"priceMin\s*=\s*(\d+)", txt)
-        max_m = re.search(r"priceMax\s*=\s*(\d+)", txt)
-        if min_m:
-            result["price"] = int(min_m.group(1))
-            break
+        if "priceArray" not in txt:
+            continue
+        for m in re.finditer(r"pConf\.priceArray\[1\]\[(\d+)\]\s*=\s*(\d+)", txt):
+            price_array[m.group(1)] = int(m.group(2))
 
     # variation_stock_list テーブルでサイズを確認
     stock_table = soup.find(class_="variation_stock_list")
@@ -162,13 +162,16 @@ def scrape_onocoltd(color: str, size: str) -> dict:
         if not th:
             continue
         row_size = th.get_text(strip=True)
-        # SS12/1440粒 のような形式でマッチ
         if size.upper() in row_size.upper():
             size_found = True
-            # radioボタンが存在すれば在庫あり
             radio = row.find("input", {"type": "radio"})
             result["in_stock"] = radio is not None
-            if not result["in_stock"]:
+            if radio:
+                # radioのvalue例: "195v1120" → variation_id="1120"
+                var_m = re.search(r"v(\d+)$", radio.get("value", ""))
+                if var_m and var_m.group(1) in price_array:
+                    result["price"] = price_array[var_m.group(1)]
+            else:
                 result["note"] = "在庫なし（売り切れ）"
             break
 
