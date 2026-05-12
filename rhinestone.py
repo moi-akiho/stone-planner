@@ -110,20 +110,54 @@ HEADERS = {
 # デコダリア (san-ai-flowers.jp) の色名→ハンドル マッピング
 # URL: /products/prs-{handle}
 DECO_DAHLIA_COLOR_MAP = {
-    "ジェット":             "jet",
-    "クリスタル":           "crystal",
-    "クリスタルオーロラ":   "crystal-ab",
-    "ローズ":               "rose",
-    "ライトローズ":         "light-rose",
-    "アメジスト":           "amethyst",
-    "ブラックダイヤモンド": "black-diamond",
+    # ── ホワイト・クリア系 ─────────────────────────────
+    "クリスタル":             "crystal",
+    "クリスタルオーロラ":     "crystal-ab",
+    "クリスタルAB":           "crystal-ab",
+    "ホワイトオパール":       "white-opal",
+    # ── イエロー・オレンジ系 ──────────────────────────
+    "ジョンキル":             "jonquil",
+    "ライトトパーズ":         "light-topaz",
+    "シトリン":               "citrine",
     "ライトコロラドトパーズ": "light-colorado-topaz",
-    "スモークトパーズ":     "smoke-topaz",
-    "エメラルド":           "emerald",
-    "ライトサファイア":     "light-sapphire",
-    "ヘマタイト":           "hematite",
-    "ジェットヘマタイト":   "jet-hematite",
-    "ライトアメジスト":     "light-amethyst",
+    "トパーズ":               "topaz",
+    "サン":                   "sun",
+    "ヒヤシンス":             "hyacinth",
+    # ── ピンク・レッド系 ──────────────────────────────
+    "ライトピーチ":           "light-peach",
+    "ヴィンテージローズ":     "vintage-rose",
+    "ライトローズ":           "light-rose",
+    "ローズ":                 "rose",
+    "フューシャ":             "fuchsia",
+    "シャム":                 "siam",
+    "ライトシャム":           "light-siam",
+    "レッドベルベット":       "red-velvet",
+    # ── パープル系 ────────────────────────────────────
+    "ライトアメジスト":       "light-amethyst",
+    "ペールライラック":       "pale-lilac",
+    "アメジスト":             "amethyst",
+    "タンザナイト":           "tanzanite",
+    # ── ブルー系 ──────────────────────────────────────
+    "アクアボヘミカ":         "aqua-bohemica",
+    "アクアマリン":           "aquamarine",
+    "ライトサファイア":       "light-sapphire",
+    "サファイア":             "sapphire",
+    "カプリブルー":           "capri-blue",
+    "ブルージルコン":         "blue-zircon",
+    "モンタナ":               "montana",
+    "ディープシー":           "deep-sea",
+    # ── グリーン系 ────────────────────────────────────
+    "エメラルド":             "emerald",
+    "オリバイン":             "olivine",
+    "ペリドット":             "peridot",
+    "シャムロック":           "shamrock",
+    # ── ブラック・グレー系 ───────────────────────────
+    "ジェット":               "jet",
+    "スモークトパーズ":       "smoke-topaz",
+    "ヘマタイト":             "hematite",
+    "ジェットヘマタイト":     "jet-hematite",
+    "ブラックダイヤモンド":   "black-diamond",
+    "ブラックダイア":         "black-diamond",  # 表記ゆれ
 }
 
 # crystal-pro.com の色名→URLコード マッピング（追加可）
