@@ -1,0 +1,7 @@
+tmp_*.txt
+tmp_*.json
+__pycache__/
+*.pyc
+.env
+watchlist.json
+rhinestone_result.csv

@@ -1,12 +1,12 @@
 """
 rhinestone.py — プレシオサ Rose MAXIMA フラットバック 最安購入プランナー
-対象サイト：
-  ① OFFICE-K    onocoltd.jp
-  ② つくろう     tsukuro.com     (EUC-JP / クーポン tsukuro5off)
-  ③ クリスタルプロ crystal-pro.com
+
+サイト別スクレイピング方式（実際のHTML構造に基づく）:
+  ① OFFICE-K    www.onocoltd.jp    /product-list/3531 → 商品ページ
+  ② つくろう     www.tsukuro.com    POST検索 + shopdetail + 価格API
+  ③ クリスタルプロ www.crystal-pro.com /SHOP/PFB-{Color}-GRS.html
 """
 
-import argparse
 import csv
 import json
 import re
@@ -16,7 +16,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
-from urllib.parse import quote, urljoin
+from urllib.parse import urljoin, quote
 
 import requests
 from bs4 import BeautifulSoup
@@ -32,9 +32,6 @@ SHIPPING = {
     "crystal_pro": {"free_threshold": 10000, "cost": 370},
 }
 
-# 送料無料ラインが未確認のOFFICE-Kは実測値で仮置き（550円）
-# → 実際のサイトで確認後に上書きすること
-
 GROSS_PACK = {"SS12": 1440, "SS16": 1440, "SS20": 1440, "SS30": 288}
 
 COUPON_TSUKURO = {"code": "tsukuro5off", "rate": 0.05, "days": [5, 15, 25]}
@@ -47,15 +44,39 @@ HEADERS = {
     )
 }
 
+# crystal-pro.com の色名→URLコード マッピング（追加可）
+CRYSTAL_PRO_COLOR_MAP = {
+    "ジェット": "Jet",
+    "クリスタル": "Crystal",
+    "クリスタルオーロラ": "CrystalAB",
+    "ブラックダイヤモンド": "BlackDiamond",
+    "ライトコロラドトパーズ": "LightColoradoTopaz",
+    "ライトローズ": "LightRose",
+    "ローズ": "Rose",
+    "アメジスト": "Amethyst",
+    "スモークトパーズ": "SmokeTopaz",
+    "エメラルド": "Emerald",
+    "ライトサファイア": "LightSapphire",
+    "ヘマタイト": "Hematite",
+    "ジェットヘマタイト": "JetHematite",
+    "ライトアメジスト": "LightAmethyst",
+}
+
 # ─────────────────────────────────────────
 # ユーティリティ
 # ─────────────────────────────────────────
 
-def fetch(url: str, encoding: Optional[str] = None, timeout: int = 15) -> Optional[BeautifulSoup]:
+def fetch_html(url: str, encoding: Optional[str] = None,
+               method: str = "GET", data=None, timeout: int = 15) -> Optional[BeautifulSoup]:
     try:
-        r = requests.get(url, headers=HEADERS, timeout=timeout)
+        if method == "POST":
+            r = requests.post(url, headers=HEADERS, data=data, timeout=timeout)
+        else:
+            r = requests.get(url, headers=HEADERS, timeout=timeout)
         if encoding:
             r.encoding = encoding
+        else:
+            r.encoding = r.apparent_encoding or "utf-8"
         r.raise_for_status()
         return BeautifulSoup(r.text, "html.parser")
     except Exception as e:
@@ -64,7 +85,6 @@ def fetch(url: str, encoding: Optional[str] = None, timeout: int = 15) -> Option
 
 
 def price_int(text: str) -> Optional[int]:
-    """「1,234円」→ 1234"""
     m = re.search(r"[\d,]+", text.replace("，", ","))
     if m:
         return int(m.group().replace(",", ""))
@@ -80,130 +100,296 @@ def apply_coupon(price: int) -> int:
 
 
 # ─────────────────────────────────────────
-# スクレイパー
+# ① OFFICE-K スクレイパー
 # ─────────────────────────────────────────
 
 def scrape_onocoltd(color: str, size: str) -> dict:
     """
-    OFFICE-K (onocoltd.jp)
-    検索URL例: https://onocoltd.jp/search?q=プレシオサ+MAXIMA+SS20+ジェット
+    1. /product-list/3531 から色名でURLを探す
+    2. 商品ページの variation_stock_list テーブルで size を確認
     """
-    query = f"プレシオサ MAXIMA フラットバック {size} {color}"
-    url = f"https://onocoltd.jp/search?q={quote(query)}"
-    soup = fetch(url)
-    result = {"site": "OFFICE-K", "site_id": "onocoltd", "color": color, "size": size,
-              "price": None, "in_stock": False, "url": url}
+    base_url = "https://www.onocoltd.jp"
+    result = {
+        "site": "OFFICE-K", "site_id": "onocoltd",
+        "color": color, "size": size,
+        "price": None, "in_stock": False,
+        "url": f"{base_url}/product-list/3531",
+        "note": "",
+    }
+
+    # カテゴリページから色→URLを取得
+    soup = fetch_html(f"{base_url}/product-list/3531")
     if not soup:
         return result
 
-    # 商品カード（Shopifyテーマ想定）
-    cards = soup.select(".product-item, .grid-product, .product-card, article.product")
-    if not cards:
-        # フォールバック: 価格テキストを直接探す
-        cards = soup.select("[class*='product']")
+    product_url = None
+    for a in soup.select('a[href*="/product/"]'):
+        name = a.get_text(strip=True)
+        if color in name:
+            href = a.get("href", "")
+            product_url = href if href.startswith("http") else urljoin(base_url, href)
+            break
 
-    for card in cards:
-        name_el = card.select_one("[class*='title'], h2, h3, .product-name")
-        if not name_el:
+    if not product_url:
+        result["note"] = "取り扱いなし"
+        return result
+
+    result["url"] = product_url
+
+    # 商品詳細ページ
+    soup = fetch_html(product_url)
+    if not soup:
+        return result
+
+    # 価格レンジをJavaScriptから取得
+    for script in soup.find_all("script"):
+        txt = script.string or ""
+        min_m = re.search(r"priceMin\s*=\s*(\d+)", txt)
+        max_m = re.search(r"priceMax\s*=\s*(\d+)", txt)
+        if min_m:
+            result["price"] = int(min_m.group(1))
+            break
+
+    # variation_stock_list テーブルでサイズを確認
+    stock_table = soup.find(class_="variation_stock_list")
+    if not stock_table:
+        result["note"] = "サイズ情報取得不可"
+        return result
+
+    size_found = False
+    for row in stock_table.find_all("tr"):
+        th = row.find("th")
+        if not th:
             continue
-        name = name_el.get_text()
-        if size.upper() not in name.upper() and size.lower() not in name.lower():
-            continue
+        row_size = th.get_text(strip=True)
+        # SS12/1440粒 のような形式でマッチ
+        if size.upper() in row_size.upper():
+            size_found = True
+            # radioボタンが存在すれば在庫あり
+            radio = row.find("input", {"type": "radio"})
+            result["in_stock"] = radio is not None
+            if not result["in_stock"]:
+                result["note"] = "在庫なし（売り切れ）"
+            break
 
-        price_el = card.select_one("[class*='price']")
-        if price_el:
-            p = price_int(price_el.get_text())
-            if p:
-                result["price"] = p
-
-        link_el = card.select_one("a[href]")
-        if link_el:
-            result["url"] = urljoin("https://onocoltd.jp", link_el["href"])
-
-        btn = card.select_one("button[name='add'], .add-to-cart, [class*='cart']")
-        result["in_stock"] = btn is not None and "disabled" not in btn.get("class", [])
-        break
+    if not size_found:
+        result["in_stock"] = False
+        result["note"] = "このサイズは取り扱いなし"
 
     return result
 
+
+# ─────────────────────────────────────────
+# ② つくろう スクレイパー
+# ─────────────────────────────────────────
 
 def scrape_tsukuro(color: str, size: str) -> dict:
     """
-    つくろう (tsukuro.com) — EUC-JP
+    1. POST検索で「ラインストーン {color}」→ ラインストーンMAXIMAの brandcode を特定
+    2. /shopdetail/{brandcode}/ の stockList テーブルからグロスパックの在庫確認
+    3. /shop/shopdetail_option.html で価格を取得
     """
-    query = f"プレシオサ ローザ MAXIMA {size} {color}"
-    url = f"https://tsukuro.com/search.php?q={quote(query, encoding='euc-jp', errors='replace')}"
-    soup = fetch(url, encoding="euc-jp")
-    result = {"site": "つくろう", "site_id": "tsukuro", "color": color, "size": size,
-              "price": None, "in_stock": False, "url": url, "coupon_applied": False}
+    base_url = "https://www.tsukuro.com"
+    result = {
+        "site": "つくろう", "site_id": "tsukuro",
+        "color": color, "size": size,
+        "price": None, "in_stock": False,
+        "url": base_url,
+        "coupon_applied": False,
+        "note": "",
+    }
+
+    # 検索
+    query = f"ラインストーン {color}"
+    soup = fetch_html(
+        f"{base_url}/shop/shopbrand.html",
+        encoding="euc-jp",
+        method="POST",
+        data={"search": query.encode("euc-jp", errors="replace")},
+    )
     if not soup:
         return result
 
-    items = soup.select(".product_item, .item, li.goods_list_item, .goods-item")
-    for item in items:
-        name_el = item.select_one(".goods_name, .product-name, h3, h4, .name")
-        if not name_el:
+    # ラインストーンMAXIMA/{color} のリンクを探す
+    brandcode = None
+    product_url = None
+    target_name = f"ラインストーンMAXIMA/{color}"
+    for a in soup.select('a[href*="shopdetail"]'):
+        name = a.get_text(strip=True)
+        # 末尾が /{color} で終わるものだけマッチ（ジェットブラウンフレアなどを除外）
+        ends_with_color = name.endswith(f"/{color}") or name.endswith(f"/{color}/グロスパック")
+        if "ラインストーンMAXIMA" in name and ends_with_color and "ホットフィックス" not in name:
+            href = a.get("href", "")
+            # brandcodeを取得
+            m = re.search(r"brandcode=(\d+)", href)
+            if m:
+                brandcode = m.group(1)
+                canonical = f"{base_url}/shopdetail/{brandcode}/"
+                product_url = canonical
+                break
+
+    if not brandcode:
+        result["note"] = "取り扱いなし"
+        return result
+
+    result["url"] = product_url
+
+    # 商品ページ取得
+    soup = fetch_html(product_url, encoding="euc-jp")
+    if not soup:
+        return result
+
+    # stockList テーブルからサイズ行を探す
+    stock_table = soup.find(class_="stockList")
+    if not stock_table:
+        result["note"] = "在庫テーブル取得不可"
+        return result
+
+    option1_id = None
+    option2_id = None  # 3 = グロスパック
+
+    for row in stock_table.find_all("tr"):
+        th = row.find("th", class_="leftLine")
+        if not th:
             continue
-        name = name_el.get_text()
-        if size.upper() not in name.upper():
+        row_size = th.get_text(strip=True).upper()
+        if size.upper() != row_size:
             continue
 
-        price_el = item.select_one(".price, .goods_price, [class*='price']")
-        if price_el:
-            p = price_int(price_el.get_text())
-            if p:
-                result["price"] = p
-                if coupon_active():
-                    result["price"] = apply_coupon(p)
-                    result["coupon_applied"] = True
+        # カラムを取得（小袋=td[0], グロスパック=td[1]）
+        tds = row.find_all("td")
+        if len(tds) < 2:
+            continue
+        gross_td = tds[1]  # グロスパック列
 
-        link_el = item.select_one("a[href]")
-        if link_el:
-            result["url"] = urljoin("https://tsukuro.com", link_el["href"])
+        # 在庫ステータスを確認
+        instock_el = gross_td.find(class_=re.compile(r"M_select-option-(instock|smallstock)"))
+        soldout_el = gross_td.find(class_=re.compile(r"M_select-option-soldout"))
 
-        # カートボタンの状態で在庫判定（「在庫なし表示でも入れられる」ケースあり）
-        cart_btn = item.select_one("input[type='submit'], button[type='submit'], .cart-btn")
-        if cart_btn:
-            disabled = cart_btn.get("disabled") or "disabled" in str(cart_btn.get("class", ""))
-            result["in_stock"] = not disabled
+        if soldout_el and not instock_el:
+            result["in_stock"] = False
+            result["note"] = "在庫なし（売り切れ）"
+        elif instock_el:
+            result["in_stock"] = True
+            # radioのvalueからoption idを取得（例: "4_3"）
+            radio = gross_td.find("input", {"type": "radio"})
+            if radio:
+                val = radio.get("value", "")
+                parts = val.split("_")
+                if len(parts) == 2:
+                    option1_id = parts[0]
+                    option2_id = parts[1]
         break
+    else:
+        result["note"] = "このサイズは取り扱いなし"
+        return result
+
+    # 価格をAJAX APIで取得
+    if result["in_stock"] and option1_id and option2_id:
+        uid = str(int(brandcode))  # 先頭0を除去
+        try:
+            pr = requests.post(
+                f"{base_url}/shop/shopdetail_option.html",
+                headers={**HEADERS,
+                         "Content-Type": "application/x-www-form-urlencoded",
+                         "Referer": product_url},
+                data=f"uid={uid}&option1_id={option1_id}&option2_id={option2_id}",
+                timeout=10,
+            )
+            price_data = pr.json()
+            price_raw = int(re.sub(r"[^\d]", "", str(price_data.get("price", "0"))))
+            if price_raw > 0:
+                result["price"] = price_raw
+                if coupon_active():
+                    result["price"] = apply_coupon(price_raw)
+                    result["coupon_applied"] = True
+        except Exception as e:
+            pass  # 価格取得失敗でも在庫情報は返す
 
     return result
 
 
+# ─────────────────────────────────────────
+# ③ クリスタルプロ スクレイパー
+# ─────────────────────────────────────────
+
 def scrape_crystal_pro(color: str, size: str) -> dict:
     """
-    クリスタルプロ (crystal-pro.com)
+    /SHOP/PFB-{ColorCode}-GRS.html を直接取得
+    select[name="VAR1-1"] のオプションでサイズを確認
     """
-    query = f"プレシオサ MAXIMA フラットバック {size} {color}"
-    url = f"https://crystal-pro.com/search?q={quote(query)}"
-    soup = fetch(url)
-    result = {"site": "クリスタルプロ", "site_id": "crystal_pro", "color": color, "size": size,
-              "price": None, "in_stock": False, "url": url}
+    base_url = "http://www.crystal-pro.com"
+    result = {
+        "site": "クリスタルプロ", "site_id": "crystal_pro",
+        "color": color, "size": size,
+        "price": None, "in_stock": False,
+        "url": base_url,
+        "note": "",
+    }
+
+    # 色コードを取得
+    color_code = CRYSTAL_PRO_COLOR_MAP.get(color)
+    if not color_code:
+        result["note"] = f"色コード未登録（{color}）"
+        return result
+
+    product_url = f"{base_url}/SHOP/PFB-{color_code}-GRS.html"
+    result["url"] = product_url
+
+    soup = fetch_html(product_url)
     if not soup:
         return result
 
-    items = soup.select(".product-item, .product-card, article, .grid__item")
-    for item in items:
-        name_el = item.select_one("h2, h3, .product-title, [class*='title']")
-        if not name_el:
+    # 404 or 商品なしの確認
+    if "404" in (soup.title.get_text() if soup.title else "") or \
+       "見つかりません" in soup.get_text():
+        result["note"] = "取り扱いなし"
+        return result
+
+    # VAR1-1 select からサイズ一覧を取得（空の先頭オプションを除く）
+    select = soup.find("select", {"name": "VAR1-1"})
+    if not select:
+        result["note"] = "サイズ情報取得不可"
+        return result
+
+    options = [o for o in select.find_all("option") if o.get("value", "")]
+    size_index = None
+    for i, opt in enumerate(options, start=1):
+        if size.lower() in opt.get("value", "").lower():
+            size_index = i
+            break
+
+    if size_index is None:
+        result["in_stock"] = False
+        result["note"] = "このサイズは取り扱いなし"
+        return result
+
+    # スクリプト内の arrVari からサイズ別価格・在庫を取得
+    # arrVari['pos_N__'] = ["has_stock", "¥XX,XXX", ...]
+    for script in soup.find_all("script"):
+        txt = script.string or ""
+        if "arrVari" not in txt:
             continue
-        name = name_el.get_text()
-        if size.upper() not in name.upper():
+        key = f"pos_{size_index}__"
+        pattern = re.compile(
+            r"arrVari\['" + re.escape(key) + r"'\]\s*=\s*\[(.*?)\];",
+            re.DOTALL,
+        )
+        m = pattern.search(txt)
+        if not m:
             continue
-
-        price_el = item.select_one("[class*='price']")
-        if price_el:
-            p = price_int(price_el.get_text())
-            if p:
-                result["price"] = p
-
-        link_el = item.select_one("a[href]")
-        if link_el:
-            result["url"] = urljoin("https://crystal-pro.com", link_el["href"])
-
-        btn = item.select_one("button, input[type='submit']")
-        result["in_stock"] = btn is not None and btn.get("disabled") is None
+        # クォートされた文字列を個別に抽出（"12,936" のカンマに惑わされないよう）
+        items = re.findall(r'"([^"]*)"', m.group(1))
+        has_stock = items[0] == "1" if items else False
+        price_raw = items[1] if len(items) > 1 else ""
+        # "&#165;12,936" → "¥12,936" → 12936
+        import html as _html
+        price_clean = re.sub(r"[^\d]", "", _html.unescape(price_raw))
+        result["in_stock"] = has_stock
+        if price_clean:
+            result["price"] = int(price_clean)
+        if not has_stock:
+            result["note"] = "在庫なし"
         break
 
     return result
@@ -231,12 +417,6 @@ def fetch_all(color: str, size: str) -> list[dict]:
 # ─────────────────────────────────────────
 
 def calc_plan(items: list[dict], packs: int) -> dict:
-    """
-    items: fetch_all() の結果リスト（複数サイズ・カラー混在可）
-    packs: 各アイテムの購入パック数
-    → 送料込み最安プランを計算
-    """
-    # サイトごとに購入金額を合算
     site_totals = {"onocoltd": 0, "tsukuro": 0, "crystal_pro": 0}
     chosen = []
 
@@ -248,7 +428,6 @@ def calc_plan(items: list[dict], packs: int) -> dict:
         site_totals[sid] += total_item
         chosen.append({**item, "packs": packs, "subtotal": total_item})
 
-    # 送料計算
     plan = {}
     grand_total = 0
     for sid, sub in site_totals.items():
@@ -281,16 +460,17 @@ def print_results(results: list[dict], packs: int):
         stock_mark = "✓ 在庫あり" if r["in_stock"] else "✗ 在庫なし"
         price_str = f"¥{r['price']:,}" if r["price"] else "価格不明"
         coupon = " [クーポン5%OFF適用]" if r.get("coupon_applied") else ""
+        note = f"  備考   : {r['note']}" if r.get("note") else ""
         print(f"\n[{r['site']}] {r['color']} {r['size']}")
         print(f"  価格   : {price_str}{coupon}")
         print(f"  在庫   : {stock_mark}")
+        if note:
+            print(note)
         print(f"  URL    : {r['url']}")
-
-    print()
 
 
 def print_plan(plan: dict):
-    print("=" * 60)
+    print("\n" + "=" * 60)
     print("  最安購入プラン")
     print("=" * 60)
     for sid, p in plan["site_plan"].items():
@@ -307,16 +487,8 @@ def print_plan(plan: dict):
     print()
 
 
-def print_no_stock(results: list[dict]):
-    no_stock = [r for r in results if not r["in_stock"]]
-    if no_stock:
-        print("在庫なし商品:")
-        for r in no_stock:
-            print(f"  - [{r['site']}] {r['color']} {r['size']}")
-
-
 # ─────────────────────────────────────────
-# 監視リスト（再入荷通知）
+# 監視リスト
 # ─────────────────────────────────────────
 
 def load_watchlist() -> list[dict]:
@@ -342,13 +514,12 @@ def add_to_watchlist(item: dict):
             "added": datetime.now().isoformat(timespec="seconds"),
         })
         save_watchlist(wl)
-        print(f"  → 監視リストに登録しました: [{item['site']}] {item['color']} {item['size']}")
+        print(f"  → 登録しました: [{item['site']}] {item['color']} {item['size']}")
     else:
-        print(f"  → 既に監視リストに登録済みです")
+        print(f"  → 既に登録済みです")
 
 
 def notify_line(message: str, token: str):
-    """LINE Notify でメッセージ送信"""
     try:
         requests.post(
             "https://notify-api.line.me/api/notify",
@@ -361,7 +532,6 @@ def notify_line(message: str, token: str):
 
 
 def watch_mode(line_token: Optional[str] = None):
-    """監視リストをチェックして在庫復活を通知"""
     wl = load_watchlist()
     if not wl:
         print("監視リストは空です。")
@@ -369,12 +539,12 @@ def watch_mode(line_token: Optional[str] = None):
 
     print(f"監視リスト: {len(wl)} 件をチェック中...")
     restocked = []
+    scrapers = {
+        "onocoltd": scrape_onocoltd,
+        "tsukuro": scrape_tsukuro,
+        "crystal_pro": scrape_crystal_pro,
+    }
     for w in wl:
-        scrapers = {
-            "onocoltd": scrape_onocoltd,
-            "tsukuro": scrape_tsukuro,
-            "crystal_pro": scrape_crystal_pro,
-        }
         fn = scrapers.get(w["site_id"])
         if not fn:
             continue
@@ -401,7 +571,7 @@ def watch_mode(line_token: Optional[str] = None):
 
 def export_csv(results: list[dict], filepath: str = "rhinestone_result.csv"):
     with open(filepath, "w", newline="", encoding="utf-8-sig") as f:
-        writer = csv.DictWriter(f, fieldnames=["site", "color", "size", "price", "in_stock", "url"])
+        writer = csv.DictWriter(f, fieldnames=["site", "color", "size", "price", "in_stock", "note", "url"])
         writer.writeheader()
         for r in results:
             writer.writerow({
@@ -410,6 +580,7 @@ def export_csv(results: list[dict], filepath: str = "rhinestone_result.csv"):
                 "size": r["size"],
                 "price": r.get("price", ""),
                 "in_stock": "在庫あり" if r["in_stock"] else "在庫なし",
+                "note": r.get("note", ""),
                 "url": r["url"],
             })
     print(f"  → CSV出力: {filepath}")
@@ -420,23 +591,17 @@ def export_csv(results: list[dict], filepath: str = "rhinestone_result.csv"):
 # ─────────────────────────────────────────
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="プレシオサ Rose MAXIMA 最安購入プランナー"
-    )
+    import argparse
+    parser = argparse.ArgumentParser(description="プレシオサ Rose MAXIMA 最安購入プランナー")
     parser.add_argument("--color", "-c", help="カラー名（例: ジェット）")
-    parser.add_argument(
-        "--size", "-s",
-        choices=["SS12", "SS16", "SS20", "SS30"],
-        help="サイズ",
-    )
-    parser.add_argument("--packs", "-p", type=int, default=1, help="購入パック数（デフォルト1）")
-    parser.add_argument("--watch", action="store_true", help="監視リストをチェックして通知")
-    parser.add_argument("--csv", action="store_true", help="結果をCSV出力")
-    parser.add_argument("--line-token", help="LINE Notify トークン（再入荷通知用）")
-    parser.add_argument("--watchlist", action="store_true", help="現在の監視リストを表示")
+    parser.add_argument("--size", "-s", choices=["SS12", "SS16", "SS20", "SS30"])
+    parser.add_argument("--packs", "-p", type=int, default=1)
+    parser.add_argument("--watch", action="store_true")
+    parser.add_argument("--csv", action="store_true")
+    parser.add_argument("--line-token")
+    parser.add_argument("--watchlist", action="store_true")
     args = parser.parse_args()
 
-    # 監視リスト表示
     if args.watchlist:
         wl = load_watchlist()
         if not wl:
@@ -447,46 +612,36 @@ def main():
                 print(f"  [{w['site']}] {w['color']} {w['size']}  登録日: {w['added']}")
         return
 
-    # 監視モード
     if args.watch:
         watch_mode(line_token=args.line_token)
         return
 
-    # 通常モード（価格チェック）
     if not args.color or not args.size:
-        parser.error("--color と --size を指定してください（例: --color ジェット --size SS20）")
+        parser.error("--color と --size を指定してください")
 
     print(f"\n検索中: {args.color} {args.size}  {args.packs}パック")
     if coupon_active():
-        print(f"  ★ 今日はつくろうクーポン({COUPON_TSUKURO['code']})が使える日です！（5%OFF）")
-    else:
-        next_days = [d for d in COUPON_TSUKURO["days"] if d > datetime.today().day]
-        next_day = next_days[0] if next_days else COUPON_TSUKURO["days"][0]
-        print(f"  （つくろうクーポン適用日: 毎月5・15・25日 / 次回: {next_day}日）")
+        print(f"  ★ 今日はつくろうクーポン({COUPON_TSUKURO['code']})が使える日！（5%OFF）")
 
     results = fetch_all(args.color, args.size)
-
     print_results(results, args.packs)
 
     in_stock = [r for r in results if r["in_stock"] and r["price"]]
     if in_stock:
         plan = calc_plan(in_stock, args.packs)
         print_plan(plan)
-    else:
-        print("在庫のある商品が見つかりませんでした。\n")
 
-    # 在庫なし → 監視リスト登録を提案
     no_stock = [r for r in results if not r["in_stock"]]
     for r in no_stock:
+        if r.get("note") in ("取り扱いなし", "このサイズは取り扱いなし", f"色コード未登録（{args.color}）"):
+            continue
         ans = input(f"[{r['site']}] {r['color']} {r['size']} — 再入荷通知を希望しますか？ (y/n): ").strip().lower()
         if ans == "y":
             add_to_watchlist(r)
 
-    # CSV出力
     if args.csv:
         export_csv(results)
 
-    # グロスパック情報
     units = GROSS_PACK.get(args.size, "?")
     print(f"\n参考: {args.size} グロスパック = {units}個/パック")
 
