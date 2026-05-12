@@ -400,7 +400,7 @@ def scrape_crystal_pro(color: str, size: str) -> dict:
 # ─────────────────────────────────────────
 
 def fetch_all(color: str, size: str) -> list[dict]:
-    scrapers = [scrape_onocoltd, scrape_tsukuro, scrape_crystal_pro]
+    scrapers = [scrape_onocoltd, scrape_tsukuro]
     results = []
     with ThreadPoolExecutor(max_workers=3) as ex:
         futures = {ex.submit(fn, color, size): fn.__name__ for fn in scrapers}
