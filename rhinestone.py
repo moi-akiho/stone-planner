@@ -194,7 +194,7 @@ def scrape_tsukuro(color: str, size: str) -> dict:
     """
     base_url = "https://www.tsukuro.com"
     result = {
-        "site": "つくろう", "site_id": "tsukuro",
+        "site": "つくろ！ドットコム", "site_id": "tsukuro",
         "color": color, "size": size,
         "price": None, "in_stock": False,
         "url": base_url,

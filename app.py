@@ -3,8 +3,10 @@ rhinestone Web アプリ
 Flask + スマホ向けUI（色ごとに独立したサイズ・数量設定）
 """
 
+import json
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 
 from flask import Flask, jsonify, render_template, request
 
@@ -18,20 +20,14 @@ SIZES = ["SS12", "SS16", "SS20", "SS30"]
 
 @app.route("/")
 def index():
-    return render_template("index.html", sizes=SIZES)
+    wl = rs.load_watchlist()
+    return render_template("index.html", sizes=SIZES, watchlist_count=len(wl))
 
+
+# ─── 価格検索 ───────────────────────────────
 
 @app.route("/search", methods=["POST"])
 def search():
-    """
-    受け取るJSON:
-    {
-      "requests": [
-        {"color": "ジェット", "items": [{"size": "SS20", "packs": 2}]},
-        {"color": "ローズ",   "items": [{"size": "SS16", "packs": 1}]}
-      ]
-    }
-    """
     data = request.get_json() or {}
     requests_list = data.get("requests", [])
 
@@ -69,7 +65,6 @@ def search():
             "unavailable": unavailable,
         }
 
-    # 全タスクを並列実行
     tasks = [
         (req["color"], item)
         for req in requests_list
@@ -83,19 +78,70 @@ def search():
 
     results = []
     with ThreadPoolExecutor(max_workers=min(len(tasks), 8)) as ex:
-        futures = {ex.submit(fetch_one, color, item): (color, item) for color, item in tasks}
+        futures = {ex.submit(fetch_one, c, item): (c, item) for c, item in tasks}
         for f in as_completed(futures):
             results.append(f.result())
 
     results.sort(key=lambda x: (color_order.get(x["color"], 99), size_order.get(x["size"], 99)))
 
-    # 色ごとにグループ化して返す
     grouped = {}
     for r in results:
         grouped.setdefault(r["color"], []).append(r)
 
     colors_in_order = [req["color"] for req in requests_list]
     return jsonify([{"color": c, "sizes": grouped[c]} for c in colors_in_order if c in grouped])
+
+
+# ─── 監視リスト ──────────────────────────────
+
+@app.route("/watchlist", methods=["GET"])
+def get_watchlist():
+    return jsonify(rs.load_watchlist())
+
+
+@app.route("/watchlist/add", methods=["POST"])
+def add_watchlist():
+    item = request.get_json() or {}
+    required = {"site_id", "site", "color", "size", "url"}
+    if not required.issubset(item.keys()):
+        return jsonify({"error": "情報が不足しています"}), 400
+    rs.add_to_watchlist(item)
+    return jsonify({"ok": True, "count": len(rs.load_watchlist())})
+
+
+@app.route("/watchlist/remove", methods=["POST"])
+def remove_watchlist():
+    data = request.get_json() or {}
+    site_id, color, size = data.get("site_id"), data.get("color"), data.get("size")
+    wl = rs.load_watchlist()
+    wl = [w for w in wl if not (w["site_id"] == site_id and w["color"] == color and w["size"] == size)]
+    rs.save_watchlist(wl)
+    return jsonify({"ok": True, "count": len(wl)})
+
+
+@app.route("/watchlist/check", methods=["POST"])
+def check_watchlist():
+    wl = rs.load_watchlist()
+    if not wl:
+        return jsonify([])
+
+    def check_one(w):
+        fn = {"onocoltd": rs.scrape_onocoltd, "tsukuro": rs.scrape_tsukuro}.get(w["site_id"])
+        if not fn:
+            return None
+        r = fn(w["color"], w["size"])
+        return {**w, "in_stock": r["in_stock"], "price": r.get("price")}
+
+    results = []
+    with ThreadPoolExecutor(max_workers=min(len(wl), 6)) as ex:
+        futures = [ex.submit(check_one, w) for w in wl]
+        for f in as_completed(futures):
+            r = f.result()
+            if r:
+                results.append(r)
+
+    results.sort(key=lambda x: (x["color"], x["size"]))
+    return jsonify(results)
 
 
 @app.route("/health")

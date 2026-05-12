@@ -6,164 +6,93 @@
   <title>ラインストーン購入プランナー</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
-      background: #f4f0fa;
-      color: #333;
-      min-height: 100vh;
-    }
+    body { font-family: -apple-system, 'Hiragino Sans', 'Noto Sans JP', sans-serif; background: #f4f0fa; color: #333; min-height: 100vh; }
     .container { max-width: 480px; margin: 0 auto; padding: 16px 14px 48px; }
     h1 { text-align: center; font-size: 17px; padding: 18px 0 14px; color: #6b4fa0; }
 
-    .card {
-      background: #fff;
-      border-radius: 16px;
-      padding: 16px;
-      margin-bottom: 12px;
-      box-shadow: 0 2px 10px rgba(107,79,160,0.08);
-    }
-    .section-title {
-      font-size: 12px; color: #999; font-weight: 600;
-      letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 12px;
-    }
+    .card { background: #fff; border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 10px rgba(107,79,160,0.08); }
+    .section-title { font-size: 12px; color: #999; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 12px; }
 
-    /* ── 色追加エリア ── */
+    /* 色追加 */
     .add-color-row { display: flex; gap: 8px; }
-    .add-color-row input {
-      flex: 1; padding: 11px 14px;
-      border: 2px solid #e0d6f0; border-radius: 10px;
-      font-size: 15px; outline: none; transition: border-color 0.15s;
-    }
+    .add-color-row input { flex: 1; padding: 11px 14px; border: 2px solid #e0d6f0; border-radius: 10px; font-size: 15px; outline: none; transition: border-color 0.15s; }
     .add-color-row input:focus { border-color: #6b4fa0; }
-    .add-color-btn {
-      padding: 11px 18px;
-      background: #6b4fa0; color: #fff;
-      border: none; border-radius: 10px;
-      font-size: 15px; font-weight: 700;
-      cursor: pointer; white-space: nowrap;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .add-color-btn:active { background: #5a3e8a; }
+    .add-btn { padding: 11px 18px; background: #6b4fa0; color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
+    .add-btn:active { background: #5a3e8a; }
 
-    /* ── 色カード ── */
-    .color-card {
-      background: #fff;
-      border: 2px solid #d4c4f0;
-      border-radius: 16px;
-      padding: 14px;
-      margin-bottom: 12px;
-      box-shadow: 0 2px 8px rgba(107,79,160,0.07);
-    }
-    .color-card-header {
-      display: flex; align-items: center;
-      margin-bottom: 12px;
-    }
-    .color-card-name {
-      flex: 1;
-      font-size: 16px; font-weight: 800; color: #5a3e8a;
-    }
-    .remove-color-btn {
-      background: none; border: none;
-      color: #bbb; font-size: 22px; cursor: pointer;
-      padding: 0 4px; line-height: 1;
-      -webkit-tap-highlight-color: transparent;
-    }
+    /* 色カード */
+    .color-card { background: #fff; border: 2px solid #d4c4f0; border-radius: 16px; padding: 14px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(107,79,160,0.07); }
+    .color-card-header { display: flex; align-items: center; margin-bottom: 12px; }
+    .color-card-name { flex: 1; font-size: 16px; font-weight: 800; color: #5a3e8a; }
+    .remove-color-btn { background: none; border: none; color: #ccc; font-size: 22px; cursor: pointer; padding: 0 4px; line-height: 1; -webkit-tap-highlight-color: transparent; }
     .remove-color-btn:active { color: #e74c3c; }
 
-    /* ── サイズ行（カード内） ── */
-    .size-row {
-      display: flex; align-items: center; padding: 11px 0;
-      border-bottom: 1px solid #f2eef8;
-    }
+    /* サイズ行（数量0スタート） */
+    .size-row { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid #f2eef8; }
     .size-row:last-child { border-bottom: none; }
-    .size-checkbox { width: 22px; height: 22px; accent-color: #6b4fa0; cursor: pointer; flex-shrink: 0; }
-    .size-label { flex: 1; margin-left: 10px; font-size: 15px; font-weight: 600; cursor: pointer; }
-    .qty-control {
-      display: flex; align-items: center; gap: 6px;
-      opacity: 0.25; pointer-events: none; transition: opacity 0.2s;
-    }
-    .qty-control.active { opacity: 1; pointer-events: auto; }
-    .qty-btn {
-      width: 32px; height: 32px; border-radius: 50%;
-      border: 2px solid #6b4fa0; background: #fff; color: #6b4fa0;
-      font-size: 19px; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      -webkit-tap-highlight-color: transparent; user-select: none; line-height: 1;
-    }
+    .size-label { flex: 1; font-size: 15px; font-weight: 600; color: #aaa; transition: color 0.15s; }
+    .size-label.active { color: #333; }
+    .qty-control { display: flex; align-items: center; gap: 6px; }
+    .qty-btn { width: 32px; height: 32px; border-radius: 50%; border: 2px solid #d0c0e8; background: #fff; color: #b0a0c8; font-size: 19px; cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; user-select: none; line-height: 1; transition: all 0.15s; }
+    .qty-btn.active { border-color: #6b4fa0; color: #6b4fa0; }
     .qty-btn:active { background: #f0eaff; }
-    .qty-input {
-      width: 36px; text-align: center; font-size: 16px; font-weight: 700;
-      border: none; outline: none; background: transparent;
-    }
-    .qty-unit { font-size: 12px; color: #999; }
+    .qty-display { width: 36px; text-align: center; font-size: 17px; font-weight: 700; color: #ccc; transition: color 0.15s; }
+    .qty-display.active { color: #333; }
+    .qty-unit { font-size: 12px; color: #bbb; }
 
-    /* ── 検索ボタン ── */
-    .search-btn {
-      width: 100%; padding: 16px;
-      background: #6b4fa0; color: #fff;
-      border: none; border-radius: 14px;
-      font-size: 17px; font-weight: 700;
-      cursor: pointer; margin-bottom: 20px;
-      -webkit-tap-highlight-color: transparent;
-      transition: background 0.15s, transform 0.1s;
-    }
+    /* 検索ボタン */
+    .search-btn { width: 100%; padding: 16px; background: #6b4fa0; color: #fff; border: none; border-radius: 14px; font-size: 17px; font-weight: 700; cursor: pointer; margin-bottom: 20px; -webkit-tap-highlight-color: transparent; transition: background 0.15s, transform 0.1s; }
     .search-btn:disabled { background: #ccc; cursor: default; }
     .search-btn:not(:disabled):active { background: #5a3e8a; transform: scale(0.98); }
 
-    /* ── ローディング ── */
+    /* 監視リストバッジ */
+    .watch-btn { width: 100%; padding: 13px; background: #fff; color: #6b4fa0; border: 2px solid #d4c4f0; border-radius: 14px; font-size: 15px; font-weight: 700; cursor: pointer; margin-bottom: 20px; -webkit-tap-highlight-color: transparent; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .watch-btn:active { background: #f4f0fa; }
+    .watch-badge { background: #6b4fa0; color: #fff; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
+
+    /* ローディング */
     .loading { text-align: center; padding: 36px 0; color: #999; font-size: 15px; }
-    .spinner {
-      width: 44px; height: 44px;
-      border: 4px solid #e8e0f5; border-top-color: #6b4fa0;
-      border-radius: 50%; animation: spin 0.75s linear infinite;
-      margin: 0 auto 14px;
-    }
+    .spinner { width: 44px; height: 44px; border: 4px solid #e8e0f5; border-top-color: #6b4fa0; border-radius: 50%; animation: spin 0.75s linear infinite; margin: 0 auto 14px; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── 結果 ── */
-    .result-color-title {
-      font-size: 16px; font-weight: 800; color: #6b4fa0; margin-bottom: 10px;
-    }
-    .result-size-title {
-      font-size: 13px; font-weight: 700; color: #999;
-      margin: 14px 0 8px; text-transform: uppercase;
-    }
+    /* 結果 */
+    .result-color-title { font-size: 16px; font-weight: 800; color: #6b4fa0; margin-bottom: 10px; }
+    .result-size-title { font-size: 13px; font-weight: 700; color: #999; margin: 14px 0 8px; }
     .result-size-title:first-of-type { margin-top: 0; }
-
-    .site-card {
-      border: 1.5px solid #e8e0f5; border-radius: 14px;
-      padding: 13px 14px; margin-bottom: 10px; background: #fdfbff;
-    }
+    .site-card { border: 1.5px solid #e8e0f5; border-radius: 14px; padding: 13px 14px; margin-bottom: 10px; background: #fdfbff; }
     .site-card.best { border-color: #6b4fa0; border-width: 2px; background: #faf7ff; }
     .badge-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
-    .best-badge {
-      background: #6b4fa0; color: #fff;
-      font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 10px;
-    }
-    .coupon-badge {
-      background: #27ae60; color: #fff;
-      font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 10px;
-    }
+    .best-badge { background: #6b4fa0; color: #fff; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 10px; }
+    .coupon-badge { background: #27ae60; color: #fff; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 10px; }
     .site-name { font-size: 13px; color: #888; margin-bottom: 2px; }
     .site-total { font-size: 22px; font-weight: 800; color: #222; line-height: 1.2; }
     .site-breakdown { font-size: 13px; color: #888; margin-bottom: 8px; }
     .shipping-free { color: #27ae60; font-weight: 600; font-size: 13px; margin-bottom: 8px; }
     .shipping-cost { font-size: 13px; color: #e08000; margin-bottom: 8px; line-height: 1.5; }
-    .buy-btn {
-      display: block; width: 100%; padding: 11px;
-      background: #6b4fa0; color: #fff;
-      text-align: center; text-decoration: none;
-      border-radius: 10px; font-size: 15px; font-weight: 700;
-      -webkit-tap-highlight-color: transparent;
-    }
+    .buy-btn { display: block; width: 100%; padding: 11px; background: #6b4fa0; color: #fff; text-align: center; text-decoration: none; border-radius: 10px; font-size: 15px; font-weight: 700; -webkit-tap-highlight-color: transparent; }
     .buy-btn:active { background: #5a3e8a; }
     .all-no-stock { color: #e74c3c; font-size: 14px; padding: 6px 0; }
-    .no-stock-note { font-size: 12px; color: #bbb; margin-top: 4px; }
-    .error-msg { color: #e74c3c; font-size: 14px; }
+    .no-stock-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+    .no-stock-label { font-size: 13px; color: #bbb; flex: 1; }
+    .notify-btn { padding: 6px 12px; background: #fff; color: #6b4fa0; border: 1.5px solid #6b4fa0; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
+    .notify-btn.registered { background: #f0eaff; color: #9b7fcc; border-color: #c9b8ee; cursor: default; }
 
-    .empty-hint {
-      text-align: center; color: #bbb; font-size: 14px; padding: 8px 0;
-    }
+    /* 監視リストパネル */
+    .watch-panel { display: none; }
+    .watch-panel.open { display: block; }
+    .watch-item { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid #f2eef8; gap: 8px; }
+    .watch-item:last-child { border-bottom: none; }
+    .watch-item-info { flex: 1; font-size: 14px; }
+    .watch-item-info .wname { font-weight: 700; }
+    .watch-item-info .wsite { font-size: 12px; color: #aaa; }
+    .watch-status { font-size: 13px; font-weight: 700; }
+    .watch-status.in { color: #27ae60; }
+    .watch-status.out { color: #bbb; }
+    .remove-watch-btn { background: none; border: none; color: #ddd; font-size: 20px; cursor: pointer; padding: 0 2px; -webkit-tap-highlight-color: transparent; }
+    .remove-watch-btn:active { color: #e74c3c; }
+
+    .empty-hint { text-align: center; color: #bbb; font-size: 14px; padding: 8px 0; }
+    .error-msg { color: #e74c3c; font-size: 14px; }
   </style>
 </head>
 <body>
@@ -176,36 +105,49 @@
     <div class="add-color-row">
       <input type="text" id="colorInput" placeholder="例: ジェット"
              onkeydown="if(event.key==='Enter') addColor()">
-      <button class="add-color-btn" onclick="addColor()">追加</button>
+      <button class="add-btn" onclick="addColor()">追加</button>
     </div>
   </div>
 
-  <!-- 色カード一覧 -->
+  <!-- 色カード -->
   <div id="colorCards">
     <p class="empty-hint">↑ 色を追加してください</p>
   </div>
 
-  <button class="search-btn" id="searchBtn" onclick="doSearch()" disabled>
-    検索する
+  <button class="search-btn" id="searchBtn" onclick="doSearch()" disabled>検索する</button>
+
+  <!-- 監視リストボタン -->
+  <button class="watch-btn" id="watchBtn" onclick="toggleWatchPanel()">
+    🔔 再入荷監視リスト
+    <span class="watch-badge" id="watchCount">{{ watchlist_count }}</span>
   </button>
+
+  <!-- 監視リストパネル -->
+  <div class="card watch-panel" id="watchPanel">
+    <div class="section-title">再入荷監視リスト</div>
+    <div id="watchList"><div class="loading"><div class="spinner"></div></div></div>
+    <button class="add-btn" style="width:100%;margin-top:12px" onclick="checkWatchlist()">今すぐ再入荷チェック</button>
+  </div>
 
   <div id="results"></div>
 </div>
 
 <script>
   const SIZES = {{ sizes | tojson }};
-  let colorList = []; // [{color, id}]
+  let colorList = [];
   let nextId = 0;
+  let watchPanelOpen = false;
+  let watchlistData = [];
+
+  // ── 色管理 ──────────────────────────────
 
   function addColor() {
     const input = document.getElementById('colorInput');
     const val = input.value.trim();
     if (!val) return;
-    // カンマ区切り一括入力対応
-    const names = val.split(/[,、，]/).map(s => s.trim()).filter(Boolean);
-    names.forEach(name => {
+    val.split(/[,、，]/).map(s => s.trim()).filter(Boolean).forEach(name => {
       if (!colorList.find(c => c.color === name)) {
-        colorList.push({ color: name, id: nextId++ });
+        colorList.push({ color: name, id: nextId++, qty: {} });
       }
     });
     input.value = '';
@@ -225,62 +167,63 @@
       container.innerHTML = '<p class="empty-hint">↑ 色を追加してください</p>';
       return;
     }
-    container.innerHTML = colorList.map(({ color, id }) => `
+    container.innerHTML = colorList.map(({ color, id, qty }) => `
       <div class="color-card" id="card_${id}">
         <div class="color-card-header">
           <div class="color-card-name">🎨 ${color}</div>
           <button class="remove-color-btn" onclick="removeColor(${id})">×</button>
         </div>
-        ${SIZES.map(size => `
-        <div class="size-row">
-          <input type="checkbox" class="size-checkbox" id="chk_${id}_${size}"
-                 onchange="toggleSize(${id}, '${size}', this.checked)">
-          <label class="size-label" for="chk_${id}_${size}">${size}</label>
-          <div class="qty-control" id="qty_${id}_${size}">
-            <button class="qty-btn" onclick="changeQty(${id}, '${size}', -1)">−</button>
-            <input class="qty-input" id="qtyInput_${id}_${size}" value="1" readonly>
-            <span class="qty-unit">パック</span>
-            <button class="qty-btn" onclick="changeQty(${id}, '${size}', +1)">＋</button>
-          </div>
-        </div>`).join('')}
+        ${SIZES.map(size => {
+          const q = (qty[size] || 0);
+          const isActive = q > 0;
+          return `
+          <div class="size-row">
+            <div class="size-label${isActive ? ' active' : ''}" id="lbl_${id}_${size}">${size}</div>
+            <div class="qty-control">
+              <button class="qty-btn${isActive ? ' active' : ''}" id="minus_${id}_${size}"
+                      onclick="changeQty(${id},'${size}',-1)">−</button>
+              <div class="qty-display${isActive ? ' active' : ''}" id="qtyDisp_${id}_${size}">${q}</div>
+              <span class="qty-unit">パック</span>
+              <button class="qty-btn active" onclick="changeQty(${id},'${size}',+1)">＋</button>
+            </div>
+          </div>`;
+        }).join('')}
       </div>
     `).join('');
   }
 
-  function toggleSize(id, size, checked) {
-    document.getElementById(`qty_${id}_${size}`).classList.toggle('active', checked);
-    updateBtn();
-  }
-
   function changeQty(id, size, delta) {
-    const input = document.getElementById(`qtyInput_${id}_${size}`);
-    const v = parseInt(input.value) + delta;
-    if (v >= 1 && v <= 99) input.value = v;
+    const entry = colorList.find(c => c.id === id);
+    if (!entry) return;
+    const current = entry.qty[size] || 0;
+    const next = Math.max(0, Math.min(99, current + delta));
+    entry.qty[size] = next;
+
+    const isActive = next > 0;
+    document.getElementById(`qtyDisp_${id}_${size}`).textContent = next;
+    document.getElementById(`qtyDisp_${id}_${size}`).className = 'qty-display' + (isActive ? ' active' : '');
+    document.getElementById(`lbl_${id}_${size}`).className = 'size-label' + (isActive ? ' active' : '');
+    document.getElementById(`minus_${id}_${size}`).className = 'qty-btn' + (isActive ? ' active' : '');
+    updateBtn();
   }
 
   function updateBtn() {
     const hasColor = colorList.length > 0;
-    const hasSize = colorList.some(({ id }) =>
-      SIZES.some(size => {
-        const chk = document.getElementById(`chk_${id}_${size}`);
-        return chk && chk.checked;
-      })
-    );
+    const hasSize = colorList.some(c => Object.values(c.qty).some(v => v > 0));
     document.getElementById('searchBtn').disabled = !(hasColor && hasSize);
   }
 
+  // ── 検索 ────────────────────────────────
+
   function doSearch() {
-    const requests = colorList.map(({ color, id }) => {
-      const items = SIZES
-        .filter(size => document.getElementById(`chk_${id}_${size}`)?.checked)
-        .map(size => ({
-          size,
-          packs: parseInt(document.getElementById(`qtyInput_${id}_${size}`).value)
-        }));
+    const requests = colorList.map(({ color, qty }) => {
+      const items = Object.entries(qty)
+        .filter(([, v]) => v > 0)
+        .map(([size, packs]) => ({ size, packs }));
       return { color, items };
     }).filter(r => r.items.length > 0);
 
-    if (requests.length === 0) return;
+    if (!requests.length) return;
 
     document.getElementById('results').innerHTML =
       '<div class="loading"><div class="spinner"></div>検索中です…</div>';
@@ -297,9 +240,7 @@
       document.getElementById('results').innerHTML =
         '<div class="card"><p class="error-msg">エラーが発生しました。もう一度お試しください。</p></div>';
     })
-    .finally(() => {
-      document.getElementById('searchBtn').disabled = false;
-    });
+    .finally(() => updateBtn());
   }
 
   function fmt(n) { return Number(n).toLocaleString('ja-JP'); }
@@ -314,7 +255,7 @@
     data.forEach(colorGroup => {
       html += `<div class="card">`;
       html += `<div class="result-color-title">🎨 ${colorGroup.color}</div>`;
-      colorGroup.sizes.forEach((d, idx) => {
+      colorGroup.sizes.forEach(d => {
         html += `<div class="result-size-title">${d.size} × ${d.packs}パック</div>`;
         if (d.available.length === 0) {
           html += `<p class="all-no-stock">❌ 全サイト在庫なし</p>`;
@@ -340,15 +281,121 @@
             html += `</div>`;
           });
         }
-        const noStockNames = d.unavailable
-          .filter(r => r.note !== 'このサイズは取り扱いなし')
+
+        // つくろ！ドットコムが在庫なしの場合、通知登録ボタンを表示
+        d.unavailable
+          .filter(r => r.site_id === 'tsukuro' && r.note !== 'このサイズは取り扱いなし')
+          .forEach(r => {
+            const key = `${r.site_id}|${colorGroup.color}|${d.size}`;
+            const alreadyRegistered = watchlistData.some(
+              w => w.site_id === r.site_id && w.color === colorGroup.color && w.size === d.size
+            );
+            html += `<div class="no-stock-row">
+              <div class="no-stock-label">❌ ${r.site} 在庫なし</div>
+              <button class="notify-btn${alreadyRegistered ? ' registered' : ''}"
+                      id="notifyBtn_${key.replace(/\|/g,'_')}"
+                      onclick="registerNotify(${JSON.stringify(r)}, '${colorGroup.color}', '${d.size}', this)">
+                ${alreadyRegistered ? '登録済み✓' : '再入荷通知を登録'}
+              </button>
+            </div>`;
+          });
+
+        const otherNoStock = d.unavailable
+          .filter(r => r.site_id !== 'tsukuro' && r.note !== 'このサイズは取り扱いなし')
           .map(r => r.site).join('、');
-        if (noStockNames) html += `<div class="no-stock-note">在庫なし: ${noStockNames}</div>`;
+        if (otherNoStock) html += `<div style="font-size:12px;color:#bbb;margin-top:4px">在庫なし: ${otherNoStock}</div>`;
       });
       html += `</div>`;
     });
     document.getElementById('results').innerHTML = html;
     document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  // ── 再入荷通知登録 ─────────────────────
+
+  function registerNotify(r, color, size, btn) {
+    if (btn.classList.contains('registered')) return;
+    fetch('/watchlist/add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ site_id: r.site_id, site: r.site, color, size, url: r.url })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.ok) {
+        btn.textContent = '登録済み✓';
+        btn.classList.add('registered');
+        document.getElementById('watchCount').textContent = data.count;
+        watchlistData.push({ site_id: r.site_id, site: r.site, color, size });
+      }
+    });
+  }
+
+  // ── 監視リストパネル ────────────────────
+
+  function toggleWatchPanel() {
+    watchPanelOpen = !watchPanelOpen;
+    document.getElementById('watchPanel').classList.toggle('open', watchPanelOpen);
+    if (watchPanelOpen) loadWatchlist();
+  }
+
+  function loadWatchlist() {
+    fetch('/watchlist')
+      .then(r => r.json())
+      .then(data => {
+        watchlistData = data;
+        renderWatchlist(data.map(w => ({ ...w, checked: false })));
+      });
+  }
+
+  function checkWatchlist() {
+    document.getElementById('watchList').innerHTML =
+      '<div class="loading"><div class="spinner"></div>チェック中…</div>';
+    fetch('/watchlist/check', { method: 'POST' })
+      .then(r => r.json())
+      .then(renderWatchlist);
+  }
+
+  function renderWatchlist(items) {
+    const el = document.getElementById('watchList');
+    if (!items.length) {
+      el.innerHTML = '<p class="empty-hint">登録なし</p>';
+      return;
+    }
+    el.innerHTML = items.map(w => `
+      <div class="watch-item">
+        <div class="watch-item-info">
+          <div class="wname">${w.color} ${w.size}</div>
+          <div class="wsite">${w.site}</div>
+        </div>
+        ${w.in_stock === true
+          ? `<div class="watch-status in">✅ 入荷！</div>`
+          : w.in_stock === false
+            ? `<div class="watch-status out">在庫なし</div>`
+            : ''}
+        <button class="remove-watch-btn"
+                onclick="removeWatch('${w.site_id}','${w.color}','${w.size}',this)">×</button>
+      </div>
+    `).join('');
+  }
+
+  function removeWatch(site_id, color, size, btn) {
+    fetch('/watchlist/remove', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ site_id, color, size })
+    })
+    .then(r => r.json())
+    .then(data => {
+      watchlistData = watchlistData.filter(
+        w => !(w.site_id === site_id && w.color === color && w.size === size)
+      );
+      document.getElementById('watchCount').textContent = data.count;
+      btn.closest('.watch-item').remove();
+      if (!document.querySelector('.watch-item')) {
+        document.getElementById('watchList').innerHTML = '<p class="empty-hint">登録なし</p>';
+      }
+    });
   }
 </script>
 </body>
