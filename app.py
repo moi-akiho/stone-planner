@@ -41,16 +41,16 @@ def search():
         packs = max(1, int(item.get("packs", 1)))
         all_results = rs.fetch_all(color, size)
 
-        available = sorted(
-            [r for r in all_results if r["in_stock"] and r["price"]],
-            key=lambda x: x["price"],
-        )
+        available = [r for r in all_results if r["in_stock"] and r["price"]]
         unavailable = [r for r in all_results if not r["in_stock"]]
 
         for r in available:
             sid = r["site_id"]
             s = rs.SHIPPING[sid]
-            subtotal = r["price"] * packs
+            # クーポン・割引後の実効価格で合計・送料・並び順を計算
+            # charmy_market → price_coupon、tsukuro → price（既に割引済み）
+            eff_price = r.get("price_coupon") or r["price"]
+            subtotal = eff_price * packs
             shipping = 0 if subtotal >= s["free_threshold"] else s["cost"]
             shortage = max(0, s["free_threshold"] - subtotal) if shipping > 0 else 0
             r["packs"] = packs
@@ -58,6 +58,9 @@ def search():
             r["shipping"] = shipping
             r["free_shortage"] = shortage
             r["total"] = subtotal + shipping
+
+        # 割引後合計(total)で昇順ソート → 最安バッジが正しいサイトに付く
+        available.sort(key=lambda x: x["total"])
 
         return {
             "color": color,
