@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ラインストーン購入プランナー</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+      background: #f4f0fa;
+      color: #333;
+      min-height: 100vh;
+    }
+    .container { max-width: 480px; margin: 0 auto; padding: 16px 14px 40px; }
+
+    h1 {
+      text-align: center;
+      font-size: 17px;
+      padding: 18px 0 14px;
+      color: #6b4fa0;
+      letter-spacing: 0.03em;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 10px rgba(107,79,160,0.08);
+    }
+
+    .section-title {
+      font-size: 12px;
+      color: #999;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    /* ── 色選択 ── */
+    .color-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .color-btn {
+      padding: 7px 14px;
+      border-radius: 20px;
+      border: 2px solid #e0d6f0;
+      background: #faf8ff;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .color-btn.selected {
+      background: #6b4fa0;
+      color: #fff;
+      border-color: #6b4fa0;
+    }
+
+    /* ── サイズ行 ── */
+    .size-row {
+      display: flex;
+      align-items: center;
+      padding: 13px 0;
+      border-bottom: 1px solid #f2eef8;
+    }
+    .size-row:last-child { border-bottom: none; }
+
+    .size-checkbox {
+      width: 22px; height: 22px;
+      accent-color: #6b4fa0;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .size-label {
+      flex: 1;
+      margin-left: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .qty-control {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      opacity: 0.25;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .qty-control.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .qty-btn {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      border: 2px solid #6b4fa0;
+      background: #fff;
+      color: #6b4fa0;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      line-height: 1;
+    }
+    .qty-btn:active { background: #f0eaff; }
+    .qty-input {
+      width: 40px;
+      text-align: center;
+      font-size: 17px;
+      font-weight: 700;
+      border: none;
+      outline: none;
+      background: transparent;
+    }
+    .qty-unit { font-size: 12px; color: #999; }
+
+    /* ── 検索ボタン ── */
+    .search-btn {
+      width: 100%;
+      padding: 16px;
+      background: #6b4fa0;
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      -webkit-tap-highlight-color: transparent;
+      margin-bottom: 20px;
+    }
+    .search-btn:disabled { background: #ccc; cursor: default; }
+    .search-btn:not(:disabled):active { background: #5a3e8a; transform: scale(0.98); }
+
+    /* ── ローディング ── */
+    .loading {
+      text-align: center;
+      padding: 36px 0;
+      color: #999;
+      font-size: 15px;
+    }
+    .spinner {
+      width: 44px; height: 44px;
+      border: 4px solid #e8e0f5;
+      border-top-color: #6b4fa0;
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+      margin: 0 auto 14px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── 結果カード ── */
+    .result-group { margin-bottom: 14px; }
+    .result-size-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #6b4fa0;
+      margin-bottom: 10px;
+    }
+
+    .site-card {
+      border: 1.5px solid #e8e0f5;
+      border-radius: 14px;
+      padding: 13px 14px;
+      margin-bottom: 10px;
+      background: #fdfbff;
+    }
+    .site-card.best {
+      border-color: #6b4fa0;
+      border-width: 2px;
+      background: #faf7ff;
+    }
+
+    .badge-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+    .best-badge {
+      display: inline-block;
+      background: #6b4fa0;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 9px;
+      border-radius: 10px;
+    }
+    .coupon-badge {
+      display: inline-block;
+      background: #27ae60;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 9px;
+      border-radius: 10px;
+    }
+
+    .site-name { font-size: 14px; color: #777; margin-bottom: 3px; }
+    .site-total {
+      font-size: 22px;
+      font-weight: 800;
+      color: #222;
+      line-height: 1.2;
+    }
+    .site-breakdown {
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 8px;
+    }
+    .shipping-free { color: #27ae60; font-weight: 600; font-size: 13px; margin-bottom: 8px; }
+    .shipping-cost {
+      font-size: 13px;
+      color: #e08000;
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+
+    .buy-btn {
+      display: block;
+      width: 100%;
+      padding: 11px;
+      background: #6b4fa0;
+      color: #fff;
+      text-align: center;
+      text-decoration: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .buy-btn:active { background: #5a3e8a; }
+
+    .no-stock-note { font-size: 12px; color: #bbb; margin-top: 4px; }
+    .all-no-stock { color: #e74c3c; font-size: 14px; padding: 8px 0; }
+
+    .error-msg { color: #e74c3c; font-size: 14px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>💎 ラインストーン購入プランナー</h1>
+
+  <!-- 色選択 -->
+  <div class="card">
+    <div class="section-title">色を選ぶ</div>
+    <div class="color-grid" id="colorGrid">
+      {% for color in colors %}
+      <button class="color-btn" onclick="selectColor(this, '{{ color }}')">{{ color }}</button>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- サイズ＆数量 -->
+  <div class="card">
+    <div class="section-title">サイズと数量</div>
+    {% for size in sizes %}
+    <div class="size-row">
+      <input type="checkbox" class="size-checkbox" id="chk_{{ size }}"
+             onchange="toggleSize('{{ size }}', this.checked)">
+      <label class="size-label" for="chk_{{ size }}">{{ size }}</label>
+      <div class="qty-control" id="qty_{{ size }}">
+        <button class="qty-btn" onclick="changeQty('{{ size }}', -1)">−</button>
+        <input class="qty-input" id="qtyInput_{{ size }}" value="1" readonly>
+        <span class="qty-unit">パック</span>
+        <button class="qty-btn" onclick="changeQty('{{ size }}', +1)">＋</button>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <button class="search-btn" id="searchBtn" onclick="doSearch()" disabled>
+    検索する
+  </button>
+
+  <div id="results"></div>
+</div>
+
+<script>
+  let selectedColor = null;
+
+  function selectColor(btn, color) {
+    document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedColor = color;
+    updateBtn();
+  }
+
+  function toggleSize(size, checked) {
+    const ctrl = document.getElementById('qty_' + size);
+    ctrl.classList.toggle('active', checked);
+    updateBtn();
+  }
+
+  function changeQty(size, delta) {
+    const input = document.getElementById('qtyInput_' + size);
+    const v = parseInt(input.value) + delta;
+    if (v >= 1 && v <= 99) input.value = v;
+  }
+
+  function updateBtn() {
+    const ok = selectedColor && document.querySelectorAll('.size-checkbox:checked').length > 0;
+    document.getElementById('searchBtn').disabled = !ok;
+  }
+
+  function doSearch() {
+    const checked = Array.from(document.querySelectorAll('.size-checkbox:checked'));
+    const items = checked.map(chk => {
+      const size = chk.id.replace('chk_', '');
+      return { size, packs: parseInt(document.getElementById('qtyInput_' + size).value) };
+    });
+
+    document.getElementById('results').innerHTML =
+      '<div class="loading"><div class="spinner"></div>検索中です…</div>';
+    document.getElementById('searchBtn').disabled = true;
+
+    fetch('/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ color: selectedColor, items })
+    })
+    .then(r => r.json())
+    .then(showResults)
+    .catch(() => {
+      document.getElementById('results').innerHTML =
+        '<div class="card"><p class="error-msg">エラーが発生しました。もう一度お試しください。</p></div>';
+    })
+    .finally(() => {
+      document.getElementById('searchBtn').disabled = false;
+    });
+  }
+
+  function fmt(n) { return n.toLocaleString('ja-JP'); }
+
+  function showResults(data) {
+    if (!data || data.error) {
+      document.getElementById('results').innerHTML =
+        `<div class="card"><p class="error-msg">${data?.error || '結果がありませんでした'}</p></div>`;
+      return;
+    }
+
+    let html = '';
+    data.forEach(d => {
+      html += `<div class="card result-group">`;
+      html += `<div class="result-size-title">${d.size} × ${d.packs}パック</div>`;
+
+      if (d.available.length === 0) {
+        html += `<p class="all-no-stock">❌ 全サイト在庫なし</p>`;
+      } else {
+        d.available.forEach((r, i) => {
+          const isBest = i === 0;
+          html += `<div class="site-card${isBest ? ' best' : ''}">`;
+
+          // バッジ
+          let badges = '';
+          if (isBest) badges += `<span class="best-badge">最安</span>`;
+          if (r.coupon_applied) badges += `<span class="coupon-badge">クーポン5%OFF適用</span>`;
+          if (badges) html += `<div class="badge-row">${badges}</div>`;
+
+          html += `<div class="site-name">${r.site}</div>`;
+          html += `<div class="site-total">¥${fmt(r.total)}</div>`;
+          html += `<div class="site-breakdown">¥${fmt(r.price)} × ${d.packs}パック`;
+          if (r.shipping > 0) html += ` + 送料¥${fmt(r.shipping)}`;
+          html += `</div>`;
+
+          if (r.shipping === 0) {
+            html += `<div class="shipping-free">✅ 送料無料</div>`;
+          } else {
+            html += `<div class="shipping-cost">⚠️ 送料 ¥${fmt(r.shipping)} かかります<br>あと ¥${fmt(r.free_shortage)} 購入で送料無料！</div>`;
+          }
+
+          html += `<a href="${r.url}" class="buy-btn" target="_blank">このサイトで購入する →</a>`;
+          html += `</div>`;
+        });
+      }
+
+      if (d.unavailable.length > 0) {
+        const names = d.unavailable
+          .filter(r => r.note !== 'このサイズは取り扱いなし')
+          .map(r => r.site).join('、');
+        if (names) html += `<div class="no-stock-note">在庫なし: ${names}</div>`;
+      }
+
+      html += `</div>`;
+    });
+
+    document.getElementById('results').innerHTML = html;
+    document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>
