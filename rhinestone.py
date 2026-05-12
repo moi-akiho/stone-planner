@@ -97,7 +97,7 @@ CHARMY_COUPON_THRESHOLD = 50_000
 CHARMY_COUPON_RATE = 0.15
 
 # チャーミーマーケット 楽天店 URL（トップページ）
-CHARMY_STORE_URL = "https://item.rakuten.co.jp/charmymarket/"  # ← 要確認
+CHARMY_STORE_URL = "https://item.rakuten.co.jp/kokemomo/pre-g-579-col/"
 
 HEADERS = {
     "User-Agent": (
