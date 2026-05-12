@@ -146,7 +146,7 @@ def check_watchlist():
     return jsonify(results)
 
 
-@app.route("/watchlist/notify", methods=["POST"])
+@app.route("/watchlist/notify", methods=["GET", "POST"])
 def notify():
     """cron-job.org から定期的に叩かれるエンドポイント。在庫復活があればメール送信。"""
     wl = rs.load_watchlist()
