@@ -593,29 +593,8 @@ def scrape_deco_dahlia(color: str, size: str) -> dict:
     except (ValueError, TypeError):
         pass
 
-    # 在庫確認: バリアントページの Schema.org JSON-LD
-    variant_id = target_variant["id"]
-    soup = fetch_html(f"{product_url}?variant={variant_id}")
-    if soup:
-        for script in soup.find_all("script", {"type": "application/ld+json"}):
-            try:
-                ld = json.loads(script.string or "")
-                offers = ld.get("offers", [])
-                if isinstance(offers, dict):
-                    offers = [offers]
-                for offer in offers:
-                    avail = offer.get("availability", "")
-                    if "InStock" in avail or "PreOrder" in avail:
-                        result["in_stock"] = True
-                    elif "OutOfStock" in avail:
-                        result["in_stock"] = False
-                    # SKUが一致するものがあれば優先
-                    if offer.get("sku", "").lower() == target_variant.get("sku", "").lower():
-                        result["in_stock"] = "InStock" in avail
-                        break
-                break
-            except Exception:
-                continue
+    # 在庫確認: Shopify JSON の available フィールドを直接使用（最も確実）
+    result["in_stock"] = bool(target_variant.get("available", False))
 
     if not result["in_stock"]:
         result["note"] = "在庫なし"
