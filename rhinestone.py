@@ -2,9 +2,10 @@
 rhinestone.py — プレシオサ Rose MAXIMA フラットバック 最安購入プランナー
 
 サイト別スクレイピング方式（実際のHTML構造に基づく）:
-  ① OFFICE-K        www.onocoltd.jp       /product-list/3531 → 商品ページ
-  ② つくろ！ドットコム www.tsukuro.com       POST検索 + shopdetail + 価格API
-  ③ デコダリア        www.san-ai-flowers.jp  Shopify JSON API
+  ① OFFICE-K            www.onocoltd.jp       /product-list/3531 → 商品ページ
+  ② つくろ！ドットコム   www.tsukuro.com       POST検索 + shopdetail + 価格API
+  ③ デコダリア           www.san-ai-flowers.jp  Shopify JSON API
+  ④ チャーミーマーケット 楽天市場              静的価格テーブル（スクレイピング不可）
 """
 
 import csv
@@ -27,14 +28,76 @@ from bs4 import BeautifulSoup
 WATCHLIST_FILE = Path(__file__).parent / "watchlist.json"
 
 SHIPPING = {
-    "onocoltd":     {"free_threshold": 1000, "cost": 550},
-    "tsukuro":      {"free_threshold": 4000, "cost": 400},
-    "deco_dahlia":  {"free_threshold": 1980, "cost": 120},  # ネコポス
+    "onocoltd":      {"free_threshold": 1000, "cost": 550},
+    "tsukuro":       {"free_threshold": 4000, "cost": 400},
+    "deco_dahlia":   {"free_threshold": 1980, "cost": 120},   # ネコポス
+    "charmy_market": {"free_threshold": 0,    "cost": 0},     # 常時送料無料
 }
 
 GROSS_PACK = {"SS12": 1440, "SS16": 1440, "SS20": 1440, "SS30": 288}
 
 COUPON_TSUKURO = {"code": "tsukuro5off", "rate": 0.05, "days": [5, 15, 25]}
+
+# ─── チャーミーマーケット 静的価格テーブル ───────────────────
+# 楽天市場。スクレイピング不可のため手動入力価格を使用。
+# カラー区分: クリスタル / クリスタルAB / カラー（その他全色）
+CHARMY_PRICES = {
+    "SS12": {"クリスタル": 4300, "クリスタルAB": 5800, "カラー": 5200},
+    "SS16": {"クリスタル": 5700, "クリスタルAB": 7800, "カラー": 6700},
+    "SS20": {"クリスタル": 7700, "クリスタルAB": 10600, "カラー": 9200},
+    "SS30": {"クリスタル": 3400, "クリスタルAB": 4600, "カラー": 4200},
+}
+
+# 色名 → カテゴリ（クリスタル / クリスタルAB / カラー）
+CHARMY_COLOR_CATEGORY: dict[str, str] = {
+    "クリスタル":       "クリスタル",
+    "クリスタルAB":     "クリスタルAB",
+    "クリスタルオーロラ": "クリスタルAB",  # 別表記
+    # ── カラー ──────────────────────────────
+    "ブラックダイア":         "カラー",
+    "ブラックダイヤモンド":   "カラー",   # 表記ゆれ対応
+    "ジェット":               "カラー",
+    "ホワイトオパール":       "カラー",
+    "ジョンキル":             "カラー",
+    "ライトトパーズ":         "カラー",
+    "シトリン":               "カラー",
+    "ライトコロラドトパーズ": "カラー",
+    "トパーズ":               "カラー",
+    "ライトピーチ":           "カラー",
+    "ヴィンテージローズ":     "カラー",
+    "ライトローズ":           "カラー",
+    "ローズ":                 "カラー",
+    "ライトアメジスト":       "カラー",
+    "ペールライラック":       "カラー",
+    "アクアボヘミカ":         "カラー",
+    "アメジスト":             "カラー",
+    "フューシャ":             "カラー",
+    "ライトシャム":           "カラー",
+    "タンザナイト":           "カラー",
+    "アクアマリン":           "カラー",
+    "ライトサファイア":       "カラー",
+    "サファイア":             "カラー",
+    "カプリブルー":           "カラー",
+    "ブルージルコン":         "カラー",
+    "エメラルド":             "カラー",
+    "オリバイン":             "カラー",
+    "ペリドット":             "カラー",
+    "シャムロック":           "カラー",
+    "サン":                   "カラー",
+    "ヒヤシンス":             "カラー",
+    "シャム":                 "カラー",
+    "スモークトパーズ":       "カラー",
+    "モンタナ":               "カラー",
+    "レッドベルベット":       "カラー",
+    "ディープシー":           "カラー",
+}
+
+# 5万円以上購入で15%OFFクーポン
+CHARMY_COUPON_THRESHOLD = 50_000
+CHARMY_COUPON_RATE = 0.15
+
+# チャーミーマーケット 楽天店 URL（トップページ）
+CHARMY_STORE_URL = "https://item.rakuten.co.jp/charmymarket/"  # ← 要確認
 
 HEADERS = {
     "User-Agent": (
@@ -504,11 +567,53 @@ def scrape_crystal_pro(color: str, size: str) -> dict:
 
 
 # ─────────────────────────────────────────
+# ④ チャーミーマーケット（静的価格）
+# ─────────────────────────────────────────
+
+def scrape_charmy_market(color: str, size: str) -> dict:
+    """
+    楽天チャーミーマーケット — スクレイピング不可のため手動設定価格を使用。
+    5万円以上で15%OFFクーポンあり。送料常時無料。
+    """
+    result = {
+        "site": "チャーミーマーケット", "site_id": "charmy_market",
+        "color": color, "size": size,
+        "price": None, "in_stock": False,
+        "url": CHARMY_STORE_URL,
+        "note": "",
+    }
+
+    category = CHARMY_COLOR_CATEGORY.get(color)
+    if not category:
+        result["note"] = f"取り扱いなし（{color}）"
+        return result
+
+    size_prices = CHARMY_PRICES.get(size)
+    if not size_prices:
+        result["note"] = "このサイズは取り扱いなし"
+        return result
+
+    price = size_prices.get(category)
+    if price is None:
+        result["note"] = "価格不明"
+        return result
+
+    coupon_price = int(price * (1 - CHARMY_COUPON_RATE))
+
+    result["price"]        = price
+    result["price_base"]   = price
+    result["price_coupon"] = coupon_price
+    result["coupon_note"]  = f"¥{CHARMY_COUPON_THRESHOLD:,}以上で15%OFF"
+    result["in_stock"]     = True   # 静的データ：在庫はサイトで要確認
+    return result
+
+
+# ─────────────────────────────────────────
 # 並列スクレイピング
 # ─────────────────────────────────────────
 
 def fetch_all(color: str, size: str) -> list[dict]:
-    scrapers = [scrape_onocoltd, scrape_tsukuro, scrape_deco_dahlia]
+    scrapers = [scrape_onocoltd, scrape_tsukuro, scrape_deco_dahlia, scrape_charmy_market]
     results = []
     with ThreadPoolExecutor(max_workers=4) as ex:
         futures = {ex.submit(fn, color, size): fn.__name__ for fn in scrapers}

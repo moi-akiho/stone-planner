@@ -64,6 +64,7 @@
     .badge-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
     .best-badge { background: #6b4fa0; color: #fff; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 10px; }
     .coupon-badge { background: #27ae60; color: #fff; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 10px; }
+    .coupon-badge.charmy-coupon { background: #e74c3c; }
     .site-name { font-size: 13px; color: #888; margin-bottom: 2px; }
     .site-total { font-size: 22px; font-weight: 800; color: #222; line-height: 1.2; }
     .site-breakdown { font-size: 13px; color: #888; margin-bottom: 8px; }
@@ -269,12 +270,16 @@
             let badges = '';
             if (isBest) badges += `<span class="best-badge">最安</span>`;
             if (r.coupon_applied) badges += `<span class="coupon-badge">クーポン5%OFF</span>`;
+            if (r.site_id === 'charmy_market') badges += `<span class="coupon-badge charmy-coupon">5万円以上15%OFF</span>`;
             if (badges) html += `<div class="badge-row">${badges}</div>`;
             html += `<div class="site-name">${r.site}</div>`;
             html += `<div class="site-total">¥${fmt(r.total)}</div>`;
-            // つくろ！ドットコム：基本価格 → 割引価格を並べて表示
+            // つくろ！ドットコム：基本価格 → 割引価格（5・15・25日）
             if (r.site_id === 'tsukuro' && r.price_base && r.price_discounted && r.price_base !== r.price_discounted) {
               html += `<div class="site-breakdown"><span class="price-base">¥${fmt(r.price_base)}</span> → <span class="price-disc">¥${fmt(r.price_discounted)}</span><span class="coupon-date">（5・15・25日）</span> × ${d.packs}パック`;
+            // チャーミーマーケット：基本価格 → クーポン価格（5万円以上）
+            } else if (r.site_id === 'charmy_market' && r.price_coupon) {
+              html += `<div class="site-breakdown"><span class="price-base">¥${fmt(r.price_base)}</span> → <span class="price-disc">¥${fmt(r.price_coupon)}</span><span class="coupon-date">（¥50,000以上）</span> × ${d.packs}パック`;
             } else {
               html += `<div class="site-breakdown">¥${fmt(r.price)} × ${d.packs}パック`;
             }
