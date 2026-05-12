@@ -11,6 +11,7 @@ from flask import Flask, jsonify, render_template, request
 import rhinestone as rs
 
 app = Flask(__name__)
+app.config["TEMPLATES_AUTO_RELOAD"] = True
 
 COLORS = list(rs.CRYSTAL_PRO_COLOR_MAP.keys())
 SIZES = ["SS12", "SS16", "SS20", "SS30"]

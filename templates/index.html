@@ -56,6 +56,29 @@
       color: #fff;
       border-color: #6b4fa0;
     }
+    .color-btn.other-btn {
+      border-style: dashed;
+      color: #999;
+    }
+    .color-btn.other-btn.selected {
+      background: #6b4fa0;
+      color: #fff;
+      border-color: #6b4fa0;
+      border-style: solid;
+    }
+    .custom-color-input {
+      display: none;
+      margin-top: 10px;
+    }
+    .custom-color-input.visible { display: block; }
+    .custom-color-input input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 2px solid #6b4fa0;
+      border-radius: 10px;
+      font-size: 15px;
+      outline: none;
+    }
 
     /* ── サイズ行 ── */
     .size-row {
@@ -246,6 +269,11 @@
       {% for color in colors %}
       <button class="color-btn" onclick="selectColor(this, '{{ color }}')">{{ color }}</button>
       {% endfor %}
+      <button class="color-btn other-btn" onclick="selectOther(this)">その他…</button>
+    </div>
+    <div class="custom-color-input" id="customColorWrap">
+      <input type="text" id="customColorInput" placeholder="色名を入力（例: ライトピンク）"
+             oninput="onCustomColorInput(this.value)">
     </div>
   </div>
 
@@ -281,6 +309,21 @@
     document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
     btn.classList.add('selected');
     selectedColor = color;
+    document.getElementById('customColorWrap').classList.remove('visible');
+    updateBtn();
+  }
+
+  function selectOther(btn) {
+    document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedColor = null;
+    document.getElementById('customColorWrap').classList.add('visible');
+    document.getElementById('customColorInput').focus();
+    updateBtn();
+  }
+
+  function onCustomColorInput(val) {
+    selectedColor = val.trim() || null;
     updateBtn();
   }
 
